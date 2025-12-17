@@ -1,5 +1,5 @@
 import React from 'react';
-import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import WorkbookPDF from './components/WorkbookPDF';
 import { sentences, DAY_NUMBER } from './data/sentences';
 import './App.css';
@@ -20,11 +20,6 @@ function App() {
           )}
         </PDFDownloadLink>
       </header>
-      <main className="pdf-container">
-        <PDFViewer width="100%" height="100%">
-          <WorkbookPDF sentences={sentences} />
-        </PDFViewer>
-      </main>
     </div>
   );
 }
