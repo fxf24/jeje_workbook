@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     borderBottomWidth: 1.5,
     borderBottomColor: C.black,
-    minPresenceAhead: 80,
+    minPresenceAhead: 200,
   },
 
   // 소제목
@@ -272,6 +272,7 @@ const styles = StyleSheet.create({
   },
   solutionRow: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     marginBottom: 6,
     minPresenceAhead: 30,
   },
@@ -280,12 +281,10 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 7,
     fontWeight: 'bold',
-    paddingTop: 4,
-    paddingBottom: 2,
+    paddingVertical: 3,
     paddingHorizontal: 6,
     marginRight: 8,
     textAlign: 'center',
-    justifyContent: 'center',
   },
   solutionText: {
     fontSize: 8.5,
@@ -669,56 +668,62 @@ const PartPage: React.FC<{ part: StudyGuidePart }> = ({ part }) => (
     <Text style={styles.partSubtitle}>{part.subtitle}</Text>
 
     {/* 출제 경향 */}
-    <Text style={styles.sectionTitle}>출제 경향</Text>
-    <View style={styles.trendBox} wrap={false}>
-      <Text style={styles.trendText}>{part.trend}</Text>
+    <View wrap={false}>
+      <Text style={styles.sectionTitle}>출제 경향</Text>
+      <View style={styles.trendBox}>
+        <Text style={styles.trendText}>{part.trend}</Text>
+      </View>
     </View>
 
     {/* 파트별 컨텐츠 */}
     {part.keyVocab && part.keyVocab.length > 0 && (
-      <>
+      <View wrap={false}>
         <Text style={styles.subTitle}>핵심 어휘</Text>
         <VocabTable vocabList={part.keyVocab} />
-      </>
+      </View>
     )}
 
     {part.keyPoints && part.keyPoints.length > 0 && (
-      <>
+      <View wrap={false}>
         <Text style={styles.subTitle}>핵심 문법 포인트</Text>
         <GrammarPoints points={part.keyPoints} />
-      </>
+      </View>
     )}
 
     {part.logicTypes && part.logicTypes.length > 0 && (
-      <>
+      <View wrap={false}>
         <Text style={styles.subTitle}>3대 킬러 논리</Text>
         <LogicTypes types={part.logicTypes} />
-      </>
+      </View>
     )}
 
     {part.themes && part.themes.length > 0 && (
-      <>
+      <View wrap={false}>
         <Text style={styles.subTitle}>주요 테마</Text>
         <ThemeList themes={part.themes} />
-      </>
+      </View>
     )}
 
     {part.questionTypes && part.questionTypes.length > 0 && (
-      <>
+      <View wrap={false}>
         <Text style={styles.subTitle}>문제 유형별 접근법</Text>
         <QuestionTypes types={part.questionTypes} />
-      </>
+      </View>
     )}
 
     {/* 기출 예제 */}
-    <Text style={styles.sectionTitle}>기출 예제</Text>
-    <SampleQuestionBox question={part.sampleQuestion} />
+    <View wrap={false}>
+      <Text style={styles.sectionTitle}>기출 예제</Text>
+      <SampleQuestionBox question={part.sampleQuestion} />
+    </View>
 
     {/* 공략 전략 */}
-    <Text style={styles.sectionTitle}>공략 전략</Text>
-    <View style={styles.strategyBox} wrap={false}>
-      <Text style={styles.strategyTitle}>■ 핵심 전략</Text>
-      <Text style={styles.strategyText}>{part.strategy}</Text>
+    <View wrap={false}>
+      <Text style={styles.sectionTitle}>공략 전략</Text>
+      <View style={styles.strategyBox}>
+        <Text style={styles.strategyTitle}>■ 핵심 전략</Text>
+        <Text style={styles.strategyText}>{part.strategy}</Text>
+      </View>
     </View>
 
     {/* 함정 패턴 */}
@@ -746,65 +751,72 @@ const FinalStrategyPage: React.FC<{ data: StudyGuideData }> = ({ data }) => (
     <Text style={styles.partSubtitle}>시험 대비 완벽 가이드</Text>
 
     {/* 시간 배분 */}
-    <Text style={styles.sectionTitle}>시간 배분 전략</Text>
-    <View style={styles.timeBox} wrap={false}>
-      <View style={styles.timeItem}>
-        <Text style={styles.timeLabel}>어휘</Text>
-        <Text style={styles.timeValue}>{data.timeAllocation.vocabulary}</Text>
-      </View>
-      <View style={styles.timeItem}>
-        <Text style={styles.timeLabel}>문법</Text>
-        <Text style={styles.timeValue}>{data.timeAllocation.grammar}</Text>
-      </View>
-      <View style={styles.timeItem}>
-        <Text style={styles.timeLabel}>빈칸 추론</Text>
-        <Text style={styles.timeValue}>{data.timeAllocation.blankInference}</Text>
-      </View>
-      <View style={styles.timeItem}>
-        <Text style={styles.timeLabel}>독해</Text>
-        <Text style={styles.timeValue}>{data.timeAllocation.reading}</Text>
+    <View wrap={false}>
+      <Text style={styles.sectionTitle}>시간 배분 전략</Text>
+      <View style={styles.timeBox}>
+        <View style={styles.timeItem}>
+          <Text style={styles.timeLabel}>어휘</Text>
+          <Text style={styles.timeValue}>{data.timeAllocation.vocabulary}</Text>
+        </View>
+        <View style={styles.timeItem}>
+          <Text style={styles.timeLabel}>문법</Text>
+          <Text style={styles.timeValue}>{data.timeAllocation.grammar}</Text>
+        </View>
+        <View style={styles.timeItem}>
+          <Text style={styles.timeLabel}>빈칸 추론</Text>
+          <Text style={styles.timeValue}>{data.timeAllocation.blankInference}</Text>
+        </View>
+        <View style={styles.timeItem}>
+          <Text style={styles.timeLabel}>독해</Text>
+          <Text style={styles.timeValue}>{data.timeAllocation.reading}</Text>
+        </View>
       </View>
     </View>
 
     {/* D-Day 전략 */}
-    <Text style={styles.sectionTitle}>D-Day 학습 계획</Text>
-
-    <View style={styles.dDayBox} wrap={false}>
-      <Text style={styles.dDayTitle}>D-30</Text>
-      {data.finalStrategy.d30.map((item, i) => (
-        <Text key={i} style={styles.dDayItem}>• {item}</Text>
-      ))}
-    </View>
-
-    <View style={styles.dDayBox} wrap={false}>
-      <Text style={styles.dDayTitle}>D-7</Text>
-      {data.finalStrategy.d7.map((item, i) => (
-        <Text key={i} style={styles.dDayItem}>• {item}</Text>
-      ))}
-    </View>
-
-    <View style={styles.dDayBox} wrap={false}>
-      <Text style={styles.dDayTitle}>D-Day</Text>
-      {data.finalStrategy.dDay.map((item, i) => (
-        <Text key={i} style={styles.dDayItem}>• {item}</Text>
-      ))}
+    <View wrap={false}>
+      <Text style={styles.sectionTitle}>D-Day 학습 계획</Text>
+      <View style={styles.dDayBox}>
+        <Text style={styles.dDayTitle}>D-30</Text>
+        {data.finalStrategy.d30.map((item, i) => (
+          <Text key={i} style={styles.dDayItem}>• {item}</Text>
+        ))}
+      </View>
+      <View style={styles.dDayBox}>
+        <Text style={styles.dDayTitle}>D-7</Text>
+        {data.finalStrategy.d7.map((item, i) => (
+          <Text key={i} style={styles.dDayItem}>• {item}</Text>
+        ))}
+      </View>
+      <View style={styles.dDayBox}>
+        <Text style={styles.dDayTitle}>D-Day</Text>
+        {data.finalStrategy.dDay.map((item, i) => (
+          <Text key={i} style={styles.dDayItem}>• {item}</Text>
+        ))}
+      </View>
     </View>
 
     {/* 자주 하는 실수 */}
-    <Text style={styles.sectionTitle}>자주 하는 실수</Text>
-    <View style={styles.trapBox} wrap={false}>
-      {data.commonMistakes.map((mistake, i) => (
-        <Text key={i} style={styles.trapItem}>• {mistake}</Text>
-      ))}
-    </View>
+    {data.commonMistakes && data.commonMistakes.length > 0 && (
+      <View wrap={false}>
+        <Text style={styles.sectionTitle}>자주 하는 실수</Text>
+        <View style={styles.trapBox}>
+          {data.commonMistakes.map((mistake, i) => (
+            <Text key={i} style={styles.trapItem}>• {mistake}</Text>
+          ))}
+        </View>
+      </View>
+    )}
 
     {/* 핵심 요약 */}
-    <View style={styles.keyTakeaway} wrap={false}>
-      <Text style={styles.keyTakeawayTitle}>핵심 요약 - 시험 직전 체크!</Text>
-      {data.keyTakeaways.map((takeaway, i) => (
-        <Text key={i} style={styles.keyTakeawayItem}>✓ {takeaway}</Text>
-      ))}
-    </View>
+    {data.keyTakeaways && data.keyTakeaways.length > 0 && (
+      <View style={styles.keyTakeaway} wrap={false}>
+        <Text style={styles.keyTakeawayTitle}>핵심 요약 - 시험 직전 체크!</Text>
+        {data.keyTakeaways.map((takeaway, i) => (
+          <Text key={i} style={styles.keyTakeawayItem}>✓ {takeaway}</Text>
+        ))}
+      </View>
+    )}
 
     <Text
       style={styles.pageNumber}

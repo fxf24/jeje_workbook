@@ -1,10 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import WorkbookPDF from './components/WorkbookPDF';
 import StudyGuidePDF from './components/StudyGuidePDF';
 import { Sentence, StudyGuideData } from './data/types';
 import { analyzeSentences, analyzeStudyGuide, PDFType } from './services/claudeApi';
 import './App.css';
+
+// localStorage 키
+const STORAGE_KEY_WORKBOOK = 'jeje_workbook_history';
+const STORAGE_KEY_STUDYGUIDE = 'jeje_studyguide_history';
+const MAX_HISTORY = 5;
+
+interface WorkbookHistory {
+  id: string;
+  date: string;
+  sentences: Sentence[];
+}
+
+interface StudyGuideHistory {
+  id: string;
+  date: string;
+  university: string;
+  data: StudyGuideData;
+}
 
 interface PDFOption {
   id: PDFType;
@@ -67,6 +85,47 @@ function App() {
   const [progressStatus, setProgressStatus] = useState('');
   const [error, setError] = useState('');
 
+  // 히스토리 state
+  const [workbookHistory, setWorkbookHistory] = useState<WorkbookHistory[]>([]);
+  const [studyGuideHistory, setStudyGuideHistory] = useState<StudyGuideHistory[]>([]);
+
+  // localStorage에서 히스토리 로드
+  useEffect(() => {
+    const savedWorkbook = localStorage.getItem(STORAGE_KEY_WORKBOOK);
+    const savedStudyGuide = localStorage.getItem(STORAGE_KEY_STUDYGUIDE);
+    if (savedWorkbook) setWorkbookHistory(JSON.parse(savedWorkbook));
+    if (savedStudyGuide) setStudyGuideHistory(JSON.parse(savedStudyGuide));
+  }, []);
+
+  // 히스토리 저장 함수
+  const saveToHistory = (type: PDFType, data: Sentence[] | StudyGuideData) => {
+    const id = Date.now().toString();
+    const date = new Date().toLocaleString('ko-KR');
+
+    if (type === 'workbook') {
+      const newHistory: WorkbookHistory = { id, date, sentences: data as Sentence[] };
+      const updated = [newHistory, ...workbookHistory].slice(0, MAX_HISTORY);
+      setWorkbookHistory(updated);
+      localStorage.setItem(STORAGE_KEY_WORKBOOK, JSON.stringify(updated));
+    } else {
+      const guideData = data as StudyGuideData;
+      const newHistory: StudyGuideHistory = { id, date, university: guideData.university, data: guideData };
+      const updated = [newHistory, ...studyGuideHistory].slice(0, MAX_HISTORY);
+      setStudyGuideHistory(updated);
+      localStorage.setItem(STORAGE_KEY_STUDYGUIDE, JSON.stringify(updated));
+    }
+  };
+
+  // 히스토리에서 불러오기
+  const loadFromHistory = (type: PDFType, id: string) => {
+    if (type === 'workbook') {
+      const item = workbookHistory.find(h => h.id === id);
+      if (item) setAnalyzedSentences(item.sentences);
+    } else {
+      const item = studyGuideHistory.find(h => h.id === id);
+      if (item) setStudyGuideData(item.data);
+    }
+  };
 
   const currentOption = pdfOptions.find((o) => o.id === selectedPDF)!;
 
@@ -104,6 +163,7 @@ function App() {
           }
         );
         setAnalyzedSentences(results);
+        saveToHistory('workbook', results);
       } else {
         const result = await analyzeStudyGuide(
           inputText,
@@ -113,6 +173,7 @@ function App() {
           }
         );
         setStudyGuideData(result);
+        saveToHistory('studyguide', result);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
@@ -225,6 +286,37 @@ function App() {
                   </span>
                 )}
               </PDFDownloadLink>
+            </div>
+          )}
+
+          {/* 히스토리 섹션 */}
+          {((selectedPDF === 'workbook' && workbookHistory.length > 0) ||
+            (selectedPDF === 'studyguide' && studyGuideHistory.length > 0)) && (
+            <div className="history-section">
+              <h3>최근 기록 (최대 5개)</h3>
+              <div className="history-list">
+                {selectedPDF === 'workbook'
+                  ? workbookHistory.map((item) => (
+                      <button
+                        key={item.id}
+                        className="history-item"
+                        onClick={() => loadFromHistory('workbook', item.id)}
+                      >
+                        <span className="history-date">{item.date}</span>
+                        <span className="history-info">{item.sentences.length}개 문장</span>
+                      </button>
+                    ))
+                  : studyGuideHistory.map((item) => (
+                      <button
+                        key={item.id}
+                        className="history-item"
+                        onClick={() => loadFromHistory('studyguide', item.id)}
+                      >
+                        <span className="history-date">{item.date}</span>
+                        <span className="history-info">{item.university}</span>
+                      </button>
+                    ))}
+              </div>
             </div>
           )}
         </div>

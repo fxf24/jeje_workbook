@@ -243,6 +243,57 @@
   transform: translateY(0);
 }
 
+/* 히스토리 섹션 */
+.history-section {
+  margin-top: 20px;
+  background: white;
+  border-radius: 16px;
+  padding: 24px 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.history-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.history-item:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e0;
+}
+
+.history-date {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.history-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e3a5f;
+}
+
 /* 반응형 */
 @media (max-width: 640px) {
   .tab-container {
