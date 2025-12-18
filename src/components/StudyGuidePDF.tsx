@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   },
   solutionRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 6,
     minPresenceAhead: 30,
   },
@@ -281,7 +281,8 @@ const styles = StyleSheet.create({
     color: C.white,
     fontSize: 7,
     fontWeight: 'bold',
-    paddingVertical: 3,
+    paddingTop: 5,
+    paddingBottom: 2,
     paddingHorizontal: 6,
     marginRight: 8,
     textAlign: 'center',
