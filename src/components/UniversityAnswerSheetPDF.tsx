@@ -47,6 +47,18 @@ const C = {
   tableBorder: '#d1d5db',
 };
 
+// 텍스트 정제 함수 (특수문자 제거)
+const cleanText = (text: string | undefined): string => {
+  if (!text) return '';
+  // 이모지 및 특수 유니코드 문자 제거
+  return text
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '') // 서로게이트 페어 (이모지) 제거
+    .replace(/[\u2600-\u26FF]/g, '')   // 기타 기호 제거
+    .replace(/[\u2700-\u27BF]/g, '')   // Dingbats 제거
+    .replace(/[\uFE00-\uFE0F]/g, '')   // Variation Selectors 제거
+    .trim();
+};
+
 const styles = StyleSheet.create({
   // 페이지 기본
   page: {
@@ -478,6 +490,153 @@ const styles = StyleSheet.create({
     color: C.purple,
     marginTop: 4,
   },
+
+  // 독해 문제 전용 스타일
+  readingProblemContainer: {
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingBottom: 10,
+  },
+  readingTopSection: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  readingLeftColumn: {
+    width: '50%',
+    paddingRight: 10,
+    borderRightWidth: 1,
+    borderRightColor: C.border,
+  },
+  readingRightColumn: {
+    width: '50%',
+    paddingLeft: 10,
+  },
+  summaryBox: {
+    backgroundColor: C.bgLight,
+    padding: 8,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: C.purple,
+  },
+  summaryLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: C.purple,
+    marginBottom: 4,
+  },
+  summaryText: {
+    fontSize: 8,
+    lineHeight: 1.4,
+    color: C.grayDark,
+  },
+  readingBottomSection: {
+    marginTop: 8,
+  },
+  readingOptionsContainer: {
+    marginBottom: 10,
+  },
+  optionNumCorrect: {
+    fontSize: 8,
+    color: C.purple,
+    fontWeight: 'bold',
+    marginRight: 6,
+  },
+  readingAnswerSection: {
+    marginBottom: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+  },
+  readingWrongAnswerSection: {
+    marginTop: 8,
+  },
+  wrongAnswerItem: {
+    fontSize: 8,
+    lineHeight: 1.5,
+    color: C.grayDark,
+    marginBottom: 4,
+    paddingLeft: 4,
+  },
+
+  // 내용 일치/불일치 문제 전용 스타일
+  matchProblemContainer: {
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: C.border,
+    paddingBottom: 10,
+  },
+  matchTopSection: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  matchLeftColumn: {
+    width: '50%',
+    paddingRight: 10,
+    borderRightWidth: 1,
+    borderRightColor: C.border,
+  },
+  matchRightColumn: {
+    width: '50%',
+    paddingLeft: 10,
+  },
+  optionAnalysisItem: {
+    fontSize: 8,
+    lineHeight: 1.5,
+    color: C.grayDark,
+    marginBottom: 6,
+    paddingLeft: 4,
+    paddingVertical: 2,
+    borderLeftWidth: 2,
+    borderLeftColor: C.border,
+  },
+  optionAnalysisCorrect: {
+    fontSize: 8,
+    lineHeight: 1.5,
+    color: C.purple,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    paddingLeft: 4,
+    paddingVertical: 2,
+    borderLeftWidth: 2,
+    borderLeftColor: C.purple,
+  },
+  contradictionBox: {
+    backgroundColor: C.bgLight,
+    padding: 8,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#e74c3c',
+  },
+  contradictionLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#e74c3c',
+    marginBottom: 4,
+  },
+  contradictionText: {
+    fontSize: 8,
+    lineHeight: 1.4,
+    color: C.grayDark,
+  },
+  extremeBox: {
+    backgroundColor: '#fff3cd',
+    padding: 8,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f39c12',
+  },
+  extremeLabel: {
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: '#f39c12',
+    marginBottom: 4,
+  },
+  extremeText: {
+    fontSize: 8,
+    lineHeight: 1.4,
+    color: C.grayDark,
+  },
 });
 
 // 원형 정답 표시 컴포넌트
@@ -639,10 +798,11 @@ const QuickVerHeader: React.FC<{
 const SynonymProblemExplanation: React.FC<{
   problem: AnswerSheetProblem;
 }> = ({ problem }) => {
-  const options = problem.options || [];
+  // 빈 선택지 필터링 (text가 있는 것만)
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
   const correctOption = options.find(o => o.isCorrect);
   // 표시할 텍스트 우선순위: passage > translation > questionText
-  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
 
   return (
     <View style={styles.problemLayout}>
@@ -684,7 +844,7 @@ const SynonymProblemExplanation: React.FC<{
             </Text>
           </View>
           <Text style={styles.explanationText}>
-            {problem.explanation || '해설 없음'}
+            {cleanText(problem.explanation) || '해설 없음'}
           </Text>
         </View>
 
@@ -719,10 +879,11 @@ const SynonymProblemExplanation: React.FC<{
 const BlankProblemExplanation: React.FC<{
   problem: AnswerSheetProblem;
 }> = ({ problem }) => {
-  const options = problem.options || [];
+  // 빈 선택지 필터링 (text가 있는 것만)
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
   const correctOption = options.find(o => o.isCorrect);
   // 표시할 텍스트 우선순위: passage > translation > questionText
-  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
 
   return (
     <View style={styles.problemLayout}>
@@ -756,7 +917,7 @@ const BlankProblemExplanation: React.FC<{
       <View style={styles.problemRight}>
         {/* keyPoint가 있으면 상단에 표시 */}
         {problem.keyPoint && (
-          <Text style={styles.stepCorrectAnswer}>{problem.keyPoint}</Text>
+          <Text style={styles.stepCorrectAnswer}>{cleanText(problem.keyPoint)}</Text>
         )}
 
         {/* Step 1: 빈칸 타게팅 */}
@@ -766,7 +927,7 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepTitle}>Step 1) 빈칸 타게팅</Text>
           </View>
           <Text style={styles.stepContent}>
-            {problem.step1 || problem.logicFlow || '빈칸이 포함된 문장의 구조와 문맥을 분석합니다.'}
+            {cleanText(problem.step1) || cleanText(problem.logicFlow) || '빈칸이 포함된 문장의 구조와 문맥을 분석합니다.'}
           </Text>
         </View>
 
@@ -777,7 +938,7 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepTitle}>Step 2) 근거 확인</Text>
           </View>
           <Text style={styles.stepContent}>
-            {problem.step2 || problem.explanation || '지문에서 정답의 근거가 되는 핵심 표현을 찾습니다.'}
+            {cleanText(problem.step2) || cleanText(problem.explanation) || '지문에서 정답의 근거가 되는 핵심 표현을 찾습니다.'}
           </Text>
         </View>
 
@@ -788,8 +949,8 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepTitle}>Step 3) 보기 판단</Text>
           </View>
           <Text style={styles.stepContent}>
-            {problem.step3 || (problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0
-              ? problem.wrongAnswerAnalysis.join('\n')
+            {cleanText(problem.step3) || (problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0
+              ? problem.wrongAnswerAnalysis.map(a => cleanText(a)).join('\n')
               : '각 선택지를 분석하여 정답을 도출합니다.')}
           </Text>
           {!problem.step3 && (
@@ -803,86 +964,374 @@ const BlankProblemExplanation: React.FC<{
   );
 };
 
-// 독해 문제 해설 컴포넌트 (지문 요지 + 정답 해설 + 오답 소거)
-const ReadingProblemExplanation: React.FC<{
+// 독해 문제 - 주제/요지/제목 컴포넌트
+const ReadingTopicExplanation: React.FC<{
   problem: AnswerSheetProblem;
 }> = ({ problem }) => {
-  const options = problem.options || [];
-  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
+  const correctOption = options.find(o => o.isCorrect);
 
   return (
-    <View style={styles.problemLayout}>
-      {/* 왼쪽: 지문 + 선택지 */}
-      <View style={styles.problemLeft}>
-        <View style={styles.problemNumBox}>
-          <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+    <View style={styles.readingProblemContainer} wrap={false}>
+      {/* 상단: 지문 번역 (왼쪽) + 지문 분석 (오른쪽) */}
+      <View style={styles.readingTopSection}>
+        <View style={styles.readingLeftColumn}>
+          <View style={styles.problemNumBox}>
+            <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+          </View>
+          <Text style={styles.translationText}>{cleanText(displayText)}</Text>
         </View>
 
-        <Text style={styles.translationText}>
-          {displayText}
-        </Text>
-
-        {/* 선택지가 있을 때만 표시 */}
-        {options.length > 0 && (
-          <View style={styles.optionsContainer}>
-            {options.map((opt, idx) => (
-              <View key={idx} style={styles.optionRow}>
-                <Text style={styles.optionNum}>
-                  {['①', '②', '③', '④', '⑤'][idx]}
-                </Text>
-                <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
-                  {opt.text || ' '}
-                </Text>
-              </View>
-            ))}
+        <View style={styles.readingRightColumn}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionNumber}>▸</Text>
+            <Text style={styles.sectionTitle}>지문 분석</Text>
           </View>
-        )}
+          <Text style={styles.explanationText}>
+            {cleanText(problem.explanation) || '지문의 핵심 내용을 분석합니다.'}
+          </Text>
+          {problem.passageSummary && (
+            <View style={styles.summaryBox}>
+              <Text style={styles.summaryLabel}>▸ 한줄 요약</Text>
+              <Text style={styles.summaryText}>{cleanText(problem.passageSummary)}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
-      {/* 오른쪽: keyPoint + 지문 요지 + 정답 해설 + 오답 소거 */}
-      <View style={styles.problemRight}>
-        {/* keyPoint 상단 표시 */}
-        {problem.keyPoint && (
-          <Text style={styles.stepCorrectAnswer}>{problem.keyPoint}</Text>
-        )}
-
-        {/* 1. 지문 요지 / 한줄 요약 */}
-        <View style={styles.stepSection}>
-          <View style={styles.stepHeader}>
-            <Text style={styles.stepNumber}>1</Text>
-            <Text style={styles.stepTitle}>지문 요지</Text>
+      {/* 하단: 선택지 (왼쪽) + 정답/오답 해설 (오른쪽) */}
+      <View style={styles.readingBottomSection}>
+        <View style={styles.readingTopSection}>
+          <View style={styles.readingLeftColumn}>
+            {options.length > 0 && (
+              <View style={styles.readingOptionsContainer}>
+                {options.map((opt, idx) => (
+                  <View key={idx} style={styles.optionRow}>
+                    <Text style={opt.isCorrect ? styles.optionNumCorrect : styles.optionNum}>
+                      {opt.isCorrect ? '◎' : '○'} {['①', '②', '③', '④', '⑤'][idx]}
+                    </Text>
+                    <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
+                      {opt.text || ' '}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
-          <Text style={styles.stepContent}>
-            {problem.passageSummary || problem.logicFlow || '지문의 핵심 내용을 요약합니다.'}
-          </Text>
-        </View>
 
-        {/* 2. 정답 해설 */}
-        <View style={styles.stepSection}>
-          <View style={styles.stepHeader}>
-            <Text style={styles.stepNumber}>2</Text>
-            <Text style={styles.stepTitle}>정답 해설</Text>
-          </View>
-          <Text style={styles.stepContent}>
-            {problem.explanation || '정답의 근거를 설명합니다.'}
-          </Text>
-        </View>
-
-        {/* 3. 오답 소거 */}
-        {problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0 && (
-          <View style={styles.stepSection}>
-            <View style={styles.stepHeader}>
-              <Text style={styles.stepNumber}>3</Text>
-              <Text style={styles.stepTitle}>오답 소거</Text>
+          <View style={styles.readingRightColumn}>
+            {problem.keyPoint && (
+              <Text style={styles.stepCorrectAnswer}>{cleanText(problem.keyPoint)}</Text>
+            )}
+            <View style={styles.stepSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionNumber}>1</Text>
+                <Text style={styles.sectionTitle}>정답 해설</Text>
+              </View>
+              <Text style={styles.explanationText}>
+                {cleanText(problem.logicFlow) || `정답은 ${problem.answer}번 ${correctOption?.text || ''}입니다.`}
+              </Text>
             </View>
-            {problem.wrongAnswerAnalysis.map((analysis, idx) => (
-              <Text key={idx} style={styles.stepContent}>{analysis}</Text>
-            ))}
+            {problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0 && (
+              <View style={styles.stepSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionNumber}>2</Text>
+                  <Text style={styles.sectionTitle}>오답 소거</Text>
+                </View>
+                {problem.wrongAnswerAnalysis.map((analysis, idx) => (
+                  <Text key={idx} style={styles.wrongAnswerItem}>{cleanText(analysis)}</Text>
+                ))}
+              </View>
+            )}
           </View>
-        )}
+        </View>
       </View>
     </View>
   );
+};
+
+// 독해 문제 - 내용 일치/불일치 컴포넌트
+const ReadingMatchExplanation: React.FC<{
+  problem: AnswerSheetProblem;
+}> = ({ problem }) => {
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
+
+  return (
+    <View style={styles.matchProblemContainer} wrap={false}>
+      {/* 상단: 지문 번역 (왼쪽) + 한줄 요약 (오른쪽) */}
+      <View style={styles.matchTopSection}>
+        <View style={styles.matchLeftColumn}>
+          <View style={styles.problemNumBox}>
+            <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+          </View>
+          <Text style={styles.translationText}>{cleanText(displayText)}</Text>
+          {problem.passageSummary && (
+            <View style={styles.summaryBox}>
+              <Text style={styles.summaryLabel}>▸ 한줄 요약</Text>
+              <Text style={styles.summaryText}>{cleanText(problem.passageSummary)}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.matchRightColumn}>
+          {problem.keyPoint && (
+            <Text style={styles.stepCorrectAnswer}>{cleanText(problem.keyPoint)}</Text>
+          )}
+
+          {/* 보기 분석 */}
+          <View style={styles.stepSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionNumber}>1</Text>
+              <Text style={styles.sectionTitle}>보기 분석</Text>
+            </View>
+            {problem.optionAnalysis && problem.optionAnalysis.length > 0 ? (
+              problem.optionAnalysis.map((analysis, idx) => {
+                const isCorrect = options[idx]?.isCorrect;
+                return (
+                  <Text
+                    key={idx}
+                    style={isCorrect ? styles.optionAnalysisCorrect : styles.optionAnalysisItem}
+                  >
+                    {cleanText(analysis)}
+                  </Text>
+                );
+              })
+            ) : (
+              options.map((opt, idx) => (
+                <View key={idx} style={styles.optionRow}>
+                  <Text style={opt.isCorrect ? styles.optionNumCorrect : styles.optionNum}>
+                    {opt.isCorrect ? '◎' : '○'} {['①', '②', '③', '④', '⑤'][idx]}
+                  </Text>
+                  <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
+                    {opt.text || ' '}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* 모순 관계 분석 */}
+          {problem.contradictionAnalysis && (
+            <View style={styles.contradictionBox}>
+              <Text style={styles.contradictionLabel}>▸ 모순 관계 분석</Text>
+              <Text style={styles.contradictionText}>{cleanText(problem.contradictionAnalysis)}</Text>
+            </View>
+          )}
+
+          {/* 극단적 표현 분석 */}
+          {problem.extremeExpressions && (
+            <View style={styles.extremeBox}>
+              <Text style={styles.extremeLabel}>▸ 극단적 표현 주의</Text>
+              <Text style={styles.extremeText}>{cleanText(problem.extremeExpressions)}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// 독해 문제 - 빈칸 추론 긴 지문 컴포넌트
+const ReadingBlankExplanation: React.FC<{
+  problem: AnswerSheetProblem;
+}> = ({ problem }) => {
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
+  const correctOption = options.find(o => o.isCorrect);
+
+  return (
+    <View style={styles.readingProblemContainer} wrap={false}>
+      {/* 상단: 지문 번역 (왼쪽) + 한줄 요약 (오른쪽) */}
+      <View style={styles.readingTopSection}>
+        <View style={styles.readingLeftColumn}>
+          <View style={styles.problemNumBox}>
+            <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+          </View>
+          <Text style={styles.translationText}>{cleanText(displayText)}</Text>
+        </View>
+
+        <View style={styles.readingRightColumn}>
+          {problem.passageSummary && (
+            <View style={styles.summaryBox}>
+              <Text style={styles.summaryLabel}>▸ 한줄 요약</Text>
+              <Text style={styles.summaryText}>{cleanText(problem.passageSummary)}</Text>
+            </View>
+          )}
+          {problem.keyPoint && (
+            <Text style={styles.stepCorrectAnswer}>{cleanText(problem.keyPoint)}</Text>
+          )}
+        </View>
+      </View>
+
+      {/* 하단: 선택지 (왼쪽) + Step 해설 (오른쪽) */}
+      <View style={styles.readingBottomSection}>
+        <View style={styles.readingTopSection}>
+          <View style={styles.readingLeftColumn}>
+            {options.length > 0 && (
+              <View style={styles.readingOptionsContainer}>
+                {options.map((opt, idx) => (
+                  <View key={idx} style={styles.optionRow}>
+                    <Text style={opt.isCorrect ? styles.optionNumCorrect : styles.optionNum}>
+                      {opt.isCorrect ? '◎' : '○'} {['①', '②', '③', '④', '⑤'][idx]}
+                    </Text>
+                    <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
+                      {opt.text || ' '}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.readingRightColumn}>
+            {/* Step 1: 빈칸 타게팅 */}
+            <View style={styles.stepSection}>
+              <View style={styles.stepHeader}>
+                <Text style={styles.stepNumber}>1</Text>
+                <Text style={styles.stepTitle}>Step 1) 빈칸 타게팅</Text>
+              </View>
+              <Text style={styles.stepContent}>
+                {cleanText(problem.step1) || '빈칸이 포함된 문장의 구조를 분석합니다.'}
+              </Text>
+            </View>
+
+            {/* Step 2: 근거 확인 */}
+            <View style={styles.stepSection}>
+              <View style={styles.stepHeader}>
+                <Text style={styles.stepNumber}>2</Text>
+                <Text style={styles.stepTitle}>Step 2) 근거 확인</Text>
+              </View>
+              <Text style={styles.stepContent}>
+                {cleanText(problem.step2) || '빈칸을 채울 핵심 단서를 찾습니다.'}
+              </Text>
+            </View>
+
+            {/* Step 3: 보기 판단 */}
+            <View style={styles.stepSection}>
+              <View style={styles.stepHeader}>
+                <Text style={styles.stepNumber}>3</Text>
+                <Text style={styles.stepTitle}>Step 3) 보기 판단</Text>
+              </View>
+              <Text style={styles.stepContent}>
+                {cleanText(problem.step3) || '각 선택지를 분석하여 정답을 도출합니다.'}
+              </Text>
+              <Text style={styles.stepCorrectAnswer}>
+                정답은 {problem.answer}번 {correctOption?.text || ''}입니다.
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// 독해 문제 - 일반 컴포넌트 (기본 레이아웃)
+const ReadingGeneralExplanation: React.FC<{
+  problem: AnswerSheetProblem;
+}> = ({ problem }) => {
+  const options = (problem.options || []).filter(opt => opt.text && opt.text.trim());
+  const displayText = problem.translation || problem.passage || problem.questionText || ' ';
+  const correctOption = options.find(o => o.isCorrect);
+
+  return (
+    <View style={styles.readingProblemContainer} wrap={false}>
+      <View style={styles.readingTopSection}>
+        <View style={styles.readingLeftColumn}>
+          <View style={styles.problemNumBox}>
+            <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+          </View>
+          <Text style={styles.translationText}>{cleanText(displayText)}</Text>
+        </View>
+
+        <View style={styles.readingRightColumn}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionNumber}>▸</Text>
+            <Text style={styles.sectionTitle}>지문 요지</Text>
+          </View>
+          <Text style={styles.explanationText}>
+            {cleanText(problem.explanation) || '지문의 핵심 내용을 분석합니다.'}
+          </Text>
+          {problem.passageSummary && (
+            <View style={styles.summaryBox}>
+              <Text style={styles.summaryLabel}>▸ 한줄 요약</Text>
+              <Text style={styles.summaryText}>{cleanText(problem.passageSummary)}</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      <View style={styles.readingBottomSection}>
+        <View style={styles.readingTopSection}>
+          <View style={styles.readingLeftColumn}>
+            {options.length > 0 && (
+              <View style={styles.readingOptionsContainer}>
+                {options.map((opt, idx) => (
+                  <View key={idx} style={styles.optionRow}>
+                    <Text style={opt.isCorrect ? styles.optionNumCorrect : styles.optionNum}>
+                      {opt.isCorrect ? '◎' : '○'} {['①', '②', '③', '④', '⑤'][idx]}
+                    </Text>
+                    <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
+                      {opt.text || ' '}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.readingRightColumn}>
+            {problem.keyPoint && (
+              <Text style={styles.stepCorrectAnswer}>{cleanText(problem.keyPoint)}</Text>
+            )}
+            <View style={styles.stepSection}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionNumber}>1</Text>
+                <Text style={styles.sectionTitle}>정답 해설</Text>
+              </View>
+              <Text style={styles.explanationText}>
+                {cleanText(problem.logicFlow) || `정답은 ${problem.answer}번 ${correctOption?.text || ''}입니다.`}
+              </Text>
+            </View>
+            {problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0 && (
+              <View style={styles.stepSection}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionNumber}>2</Text>
+                  <Text style={styles.sectionTitle}>오답 소거</Text>
+                </View>
+                {problem.wrongAnswerAnalysis.map((analysis, idx) => (
+                  <Text key={idx} style={styles.wrongAnswerItem}>{cleanText(analysis)}</Text>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// 독해 문제 분기 컴포넌트
+const ReadingProblemExplanation: React.FC<{
+  problem: AnswerSheetProblem;
+}> = ({ problem }) => {
+  // readingSubType에 따라 다른 컴포넌트 렌더링
+  const subType = problem.readingSubType || 'general';
+  const questionType = problem.questionType?.toLowerCase() || '';
+
+  // readingSubType이 없으면 questionType으로 추론
+  if (subType === 'topic' || questionType.includes('주제') || questionType.includes('요지') || questionType.includes('제목')) {
+    return <ReadingTopicExplanation problem={problem} />;
+  }
+  if (subType === 'match' || questionType.includes('일치') || questionType.includes('불일치')) {
+    return <ReadingMatchExplanation problem={problem} />;
+  }
+  if (subType === 'blank' || (questionType.includes('빈칸') && problem.step1)) {
+    return <ReadingBlankExplanation problem={problem} />;
+  }
+  return <ReadingGeneralExplanation problem={problem} />;
 };
 
 // 문제 해설 래퍼 컴포넌트

@@ -129,10 +129,24 @@ export interface AnswerSheetProblem {
   explanation: string; // 정답 해설
   wrongAnswerAnalysis?: string[]; // 오답 분석
   keyPoint?: string; // 핵심 포인트
-  relatedVocab?: string[]; // 관련 어휘
+  relatedVocab?: string[]; // 관련 어휘 (동의어 문제: "단어 뜻" 형식)
   grammarPoint?: string; // 문법 포인트 (문법 문제)
   logicFlow?: string; // 논리 흐름 (빈칸/독해)
   translation?: string; // 핵심 문장 해석
+
+  // 빈칸 추론 문제용 Step 해설
+  step1?: string; // Step 1) 빈칸 타게팅
+  step2?: string; // Step 2) 근거 확인
+  step3?: string; // Step 3) 보기 판단
+
+  // 독해 문제용
+  passageSummary?: string; // 지문 요지/한줄 요약
+  readingSubType?: 'topic' | 'match' | 'blank' | 'general'; // 독해 세부 유형
+
+  // 내용 일치/불일치 문제용
+  optionAnalysis?: string[]; // 각 선택지별 분석
+  contradictionAnalysis?: string; // 모순 관계 분석
+  extremeExpressions?: string; // 극단적 표현 분석
 }
 
 export interface AnswerSheetOption {

@@ -553,9 +553,8 @@ function parseAnswerSheetTSV(examData: string): {
   return { vocabSection, questionLines, questionHeader };
 }
 
-// 분할된 문제에 대한 해설 생성
+// 분할된 문제에 대한 해설 생성 (어휘는 TSV에서 이미 파싱됨 - API로 보내지 않음)
 async function analyzeAnswerSheetBatch(
-  vocabSection: string,
   questionHeader: string,
   questionBatch: string[],
   batchNum: number,
@@ -574,12 +573,13 @@ async function analyzeAnswerSheetBatch(
 - KHU → 경희대
 - SKK → 성균관대
 
-## 문제 유형 판별
-- Question_Text에 "빈칸" + 어휘 선택지 → "어휘 - 빈칸 완성"
-- Question_Text에 "동의어" → "어휘 - 동의어"
+## 문제 유형 판별 (questionType 필드에 사용)
+- Question_Text에 "동의어" 또는 "밑줄 친 단어와 가장 가까운/유사한 의미" → "어휘 - 동의어"
+- Question_Text에 "빈칸" + 단어 선택지 → "어휘 - 빈칸 완성"
 - Question_Text에 "유사한 관계" → "어휘 - 유추"
 - Question_Text에 "밑줄 친 부분 중 틀린" → "문법 - 오류 찾기"
-- Passage가 긴 지문 + 내용 이해 → "독해"
+- Passage가 긴 지문 + "주제/요지/제목/내용/일치/불일치/빈칸" → "독해"
+- 그 외 빈칸 추론 문제 → "빈칸 추론"
 
 ## 출력 형식 (반드시 순수 JSON만 출력)
 ${batchNum === 1 ? `{
@@ -590,37 +590,154 @@ ${batchNum === 1 ? `{
   "problems": [...]
 }`}
 
-각 problem 형식:
+## 문제 유형별 해설 형식
+
+### 1. 동의어 문제 (questionType에 "동의어" 포함)
 {
-  "num": [문제번호 - Question_No 값],
+  "num": [문제번호],
   "questionId": "[Question_ID]",
-  "questionType": "[유형]",
-  "questionText": "[Question_Text 그대로 복사]",
-  "passage": "[Passage 열 값 그대로 복사 - 빈칸이 있는 문장 포함. 없으면 빈 문자열]",
-  "options": [
-    { "label": "A", "text": "[Option_A]", "isCorrect": true/false },
-    { "label": "B", "text": "[Option_B]", "isCorrect": true/false },
-    ...
-  ],
-  "answer": [정답번호 1-5 - 답 열 값],
-  "explanation": "[해설 - ~해요체]",
-  "wrongAnswerAnalysis": ["[오답분석1]", "[오답분석2]", "[오답분석3]"],
-  "keyPoint": "[핵심 포인트 - 정답 단어의 핵심 의미나 문법 포인트]",
-  "relatedVocab": ["단어1: 뜻1", "단어2: 뜻2"],
-  "logicFlow": "[빈칸 전후의 논리적 단서 설명]"
+  "questionType": "어휘 - 동의어",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로 - 밑줄 친 단어가 포함된 문장]",
+  "translation": "[Passage의 한글 번역 - 밑줄 친 단어는 **굵게** 표시]",
+  "options": [{ "label": "A", "text": "construe - 해석하다", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "explanation": "[정답 단어의 어원 분석 + 문맥에서의 의미 설명. 예: 'offhand는 영어 off(떨어져) + hand(손)의 합성어로, 손에서 떨어진, 즉 준비 없이 즉석에서 하는 것을 의미해요.' ~해요체]",
+  "relatedVocab": ["동의어1 뜻1", "동의어2 뜻2", ...],
+  "keyPoint": "[정답 단어] = [핵심 뜻]"
 }
+- translation: Passage의 자연스러운 한글 번역 (밑줄 친 단어는 **굵게**)
+- explanation: 정답 단어의 어원 분석과 문맥에서 왜 적합한지 설명
+- relatedVocab: 정답과 관련된 동의어 8~12개 (형식: "단어 뜻")
+- options.text: 반드시 "영어단어 - 한글뜻" 형식으로 작성 (예: "synthesize - 합성하다")
+
+### 2. 빈칸 추론 문제 (questionType에 "빈칸" 포함, 독해 아닌 경우)
+{
+  "num": [문제번호],
+  "questionId": "[Question_ID]",
+  "questionType": "빈칸 추론",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로 - 빈칸이 있는 문장]",
+  "translation": "[Passage의 한글 번역 - 빈칸은 ____로 표시]",
+  "options": [{ "label": "A", "text": "construe - 해석하다", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "step1": "[빈칸 타게팅 - 빈칸이 포함된 문장 구조 분석. 예: '빈칸은 ~의 구조에서 ~라는 의미가 들어가야 해요.']",
+  "step2": "[근거 확인 - 정답의 핵심 표현이나 논리적 단서. 예: '핵심 표현 \"a perfect example of\"입니다. 이는 ~를 의미해요.']",
+  "step3": "[보기 판단 - 각 선택지별 분석. 형식: '① 선택지 - 뜻 → 분석\\n② 선택지 - 뜻 → 분석\\n...\\n정답은 ⓝ번 [정답단어]입니다.']",
+  "keyPoint": "정답 | ⓝ [정답단어] → [핵심 의미나 문법 포인트]"
+}
+- translation: Passage의 자연스러운 한글 번역 (빈칸은 ____로 표시)
+- step1: 빈칸의 위치와 문장 구조 분석
+- step2: 정답을 찾는 핵심 근거/단서
+- step3: 모든 선택지에 대한 분석, 마지막에 정답 명시
+- options.text: 반드시 "영어단어/표현 - 한글뜻" 형식으로 작성 (예: "synthesize - 합성하다")
+
+### 3. 독해 문제 - 주제/요지/제목 (questionType에 "주제/요지/제목" 포함)
+{
+  "num": [문제번호],
+  "questionId": "[Question_ID]",
+  "questionType": "독해 - 주제/요지/제목",
+  "readingSubType": "topic",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로]",
+  "translation": "[Passage의 한글 번역 - 핵심 문장이나 정답 근거가 되는 부분은 **굵게** 표시]",
+  "options": [{ "label": "A", "text": "선택지의 한글 해석만", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "passageSummary": "[한줄 요약 - 지문의 핵심을 한 문장으로 요약]",
+  "keyPoint": "정답 | ⓝ [정답요약] → [출제 Point]",
+  "explanation": "[지문 분석 - 지문의 핵심 내용을 2~4문장으로 분석]",
+  "logicFlow": "[정답 해설 - 지문에서 정답을 뒷받침하는 핵심 내용을 인용하며 설명]",
+  "wrongAnswerAnalysis": [
+    "①번: [오답 이유 - 카테고리] 설명",
+    "②번: [오답 이유 - 카테고리] 설명"
+  ]
+}
+
+### 4. 독해 문제 - 내용 일치/불일치 (questionType에 "일치/불일치/내용" 포함)
+{
+  "num": [문제번호],
+  "questionId": "[Question_ID]",
+  "questionType": "독해 - 내용 일치/불일치",
+  "readingSubType": "match",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로]",
+  "translation": "[Passage의 한글 번역]",
+  "options": [{ "label": "A", "text": "선택지의 한글 해석만", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "passageSummary": "[한줄 요약]",
+  "keyPoint": "정답 | ⓝ [정답요약]",
+  "optionAnalysis": [
+    "①번: [일치/불일치] - [지문 근거] → [분석]",
+    "②번: [일치/불일치] - [지문 근거] → [분석]",
+    "③번: [일치/불일치] - [지문 근거] → [분석]",
+    "④번: [일치/불일치] - [지문 근거] → [분석]",
+    "⑤번: [일치/불일치] - [지문 근거] → [분석]"
+  ],
+  "contradictionAnalysis": "[모순 관계 분석 - 정답/오답의 핵심 차이점 설명]",
+  "extremeExpressions": "[극단적 표현 분석 - always, never, all, none 등 함정 표현 분석]"
+}
+
+### 5. 독해 문제 - 빈칸 추론 긴 지문 (긴 지문에 빈칸이 있는 경우)
+{
+  "num": [문제번호],
+  "questionId": "[Question_ID]",
+  "questionType": "독해 - 빈칸 추론",
+  "readingSubType": "blank",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로 - 빈칸 포함]",
+  "translation": "[Passage의 한글 번역 - 빈칸은 ____로 표시]",
+  "options": [{ "label": "A", "text": "선택지의 한글 해석만", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "passageSummary": "[한줄 요약]",
+  "keyPoint": "정답 | ⓝ [정답요약]",
+  "step1": "[Step 1) 빈칸 타게팅 - 빈칸이 포함된 문장 구조와 빈칸의 역할 분석]",
+  "step2": "[Step 2) 근거 확인 - 빈칸을 채울 핵심 단서와 논리적 흐름]",
+  "step3": "[Step 3) 보기 판단 - 각 선택지 분석 후 정답 도출]"
+}
+
+### 6. 일반 독해 문제 (위 유형에 해당하지 않는 경우)
+{
+  "num": [문제번호],
+  "questionId": "[Question_ID]",
+  "questionType": "독해",
+  "readingSubType": "general",
+  "questionText": "[Question_Text 그대로]",
+  "passage": "[Passage 그대로]",
+  "translation": "[Passage의 한글 번역]",
+  "options": [{ "label": "A", "text": "선택지의 한글 해석만", "isCorrect": true/false }, ...],
+  "answer": [정답번호 1-5],
+  "passageSummary": "[한줄 요약]",
+  "keyPoint": "정답 | ⓝ [정답요약]",
+  "explanation": "[지문 요지]",
+  "logicFlow": "[정답 해설]",
+  "wrongAnswerAnalysis": ["①번: 설명", "②번: 설명", ...]
+}
+
+## 독해 문제 세부 유형 판별 기준:
+- "주제/요지/제목/글의 목적" → readingSubType: "topic"
+- "일치/불일치/내용/사실" → readingSubType: "match"
+- 긴 지문 + 빈칸 → readingSubType: "blank"
+- 그 외 → readingSubType: "general"
+
+## 공통 규칙:
+- translation: Passage의 자연스러운 한글 번역 (핵심 부분은 **굵게**)
+- passageSummary: 한줄 요약 형식으로 지문 핵심 정리
+- keyPoint: 정답과 출제 포인트
+- options.text: 선택지의 한글 해석만 작성 (영어 포함 금지)
 
 ## 중요 규칙
 - passage 필드에는 TSV의 Passage 열 값을 반드시 그대로 복사하세요.
 - questionText 필드에는 TSV의 Question_Text 열 값을 반드시 그대로 복사하세요.
-- keyPoint는 정답의 핵심을 요약한 한 줄 설명이에요.
-- logicFlow는 빈칸 문제에서 정답을 찾는 논리적 흐름을 설명하세요.`;
+- translation 필드에는 passage의 자연스러운 한글 번역을 제공하세요. 이모지 사용 금지.
+- 모든 해설은 ~해요체로 작성하세요.
+- 동의어 문제의 relatedVocab은 "단어 뜻" 형식으로 8~12개 제공하세요.
+- 빈칸 추론의 step3에서는 모든 선택지를 분석하고 마지막에 "정답은 ⓝ번 [단어]입니다."로 마무리하세요.`;
 
   if (onProgress) {
     onProgress(`배치 ${batchNum}/${totalBatches} 분석 중...`);
   }
 
-  const batchData = `${vocabSection}\n\n${questionHeader}\n${questionBatch.join('\n')}`;
+  const batchData = `${questionHeader}\n${questionBatch.join('\n')}`;
 
   const response = await fetch(CLAUDE_API_URL, {
     method: 'POST',
@@ -733,7 +850,6 @@ export async function analyzeAnswerSheet(
 
     try {
       const result = await analyzeAnswerSheetBatch(
-        vocabSection,
         questionHeader,
         batches[i],
         i + 1,
