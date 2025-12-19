@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import WorkbookPDF from './components/WorkbookPDF';
 import StudyGuidePDF from './components/StudyGuidePDF';
-import { Sentence, StudyGuideData } from './data/types';
-import { analyzeSentences, analyzeStudyGuide, PDFType } from './services/claudeApi';
+import UniversityAnswerSheetPDF from './components/UniversityAnswerSheetPDF';
+import { Sentence, StudyGuideData, UniversityAnswerSheetData } from './data/types';
+import { analyzeSentences, analyzeStudyGuide, analyzeAnswerSheet, PDFType } from './services/claudeApi';
 import './App.css';
 
 // localStorage 키
 const STORAGE_KEY_WORKBOOK = 'jeje_workbook_history';
 const STORAGE_KEY_STUDYGUIDE = 'jeje_studyguide_history';
+const STORAGE_KEY_ANSWERSHEET = 'jeje_answersheet_history';
 const MAX_HISTORY = 5;
 
 interface WorkbookHistory {
@@ -22,6 +24,14 @@ interface StudyGuideHistory {
   date: string;
   university: string;
   data: StudyGuideData;
+}
+
+interface AnswerSheetHistory {
+  id: string;
+  date: string;
+  university: string;
+  year: string;
+  data: UniversityAnswerSheetData;
 }
 
 interface PDFOption {
@@ -72,6 +82,21 @@ Despite the apparent simplicity of the solution, implementing it remains challen
 - 빈칸추론: 대조 논리 위주
 - 독해: 과학/사회 지문 비중 증가`,
   },
+  {
+    id: 'answersheet',
+    label: '대학별 해설지',
+    description: '문제별 상세 해설 · 정답표 · 어휘 정리',
+    placeholder: `엑셀에서 복사한 TSV 데이터를 붙여넣으세요.
+
+[어휘 목록] (탭으로 구분)
+문제 번호	단어	뜻
+1	avert	막다, 피하다
+1	inundate	침수시키다
+
+[문제 데이터] (탭으로 구분)
+Question_ID	Source_Year	유형 구분	상세 유형 구분	Question_No	Question_Text	Passage	Option_A	Option_B	Option_C	Option_D	Option_E	답
+2017_SJU_01	2017			1	주어진 문장의 빈칸에...	The citizens packed...	avert	inundate	emit	trigger		1`,
+  },
 ];
 
 function App() {
@@ -80,6 +105,7 @@ function App() {
   const apiKey = process.env.REACT_APP_CLAUDE_API_KEY || '';
   const [analyzedSentences, setAnalyzedSentences] = useState<Sentence[]>([]);
   const [studyGuideData, setStudyGuideData] = useState<StudyGuideData | null>(null);
+  const [answerSheetData, setAnswerSheetData] = useState<UniversityAnswerSheetData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [progressStatus, setProgressStatus] = useState('');
@@ -88,31 +114,56 @@ function App() {
   // 히스토리 state
   const [workbookHistory, setWorkbookHistory] = useState<WorkbookHistory[]>([]);
   const [studyGuideHistory, setStudyGuideHistory] = useState<StudyGuideHistory[]>([]);
+  const [answerSheetHistory, setAnswerSheetHistory] = useState<AnswerSheetHistory[]>([]);
 
   // localStorage에서 히스토리 로드
   useEffect(() => {
     const savedWorkbook = localStorage.getItem(STORAGE_KEY_WORKBOOK);
     const savedStudyGuide = localStorage.getItem(STORAGE_KEY_STUDYGUIDE);
+    const savedAnswerSheet = localStorage.getItem(STORAGE_KEY_ANSWERSHEET);
     if (savedWorkbook) setWorkbookHistory(JSON.parse(savedWorkbook));
     if (savedStudyGuide) setStudyGuideHistory(JSON.parse(savedStudyGuide));
+    if (savedAnswerSheet) setAnswerSheetHistory(JSON.parse(savedAnswerSheet));
   }, []);
 
   // 히스토리 저장 함수
-  const saveToHistory = (type: PDFType, data: Sentence[] | StudyGuideData) => {
+  const saveToHistory = (type: PDFType, data: Sentence[] | StudyGuideData | UniversityAnswerSheetData) => {
     const id = Date.now().toString();
     const date = new Date().toLocaleString('ko-KR');
 
-    if (type === 'workbook') {
-      const newHistory: WorkbookHistory = { id, date, sentences: data as Sentence[] };
-      const updated = [newHistory, ...workbookHistory].slice(0, MAX_HISTORY);
-      setWorkbookHistory(updated);
-      localStorage.setItem(STORAGE_KEY_WORKBOOK, JSON.stringify(updated));
-    } else {
-      const guideData = data as StudyGuideData;
-      const newHistory: StudyGuideHistory = { id, date, university: guideData.university, data: guideData };
-      const updated = [newHistory, ...studyGuideHistory].slice(0, MAX_HISTORY);
-      setStudyGuideHistory(updated);
-      localStorage.setItem(STORAGE_KEY_STUDYGUIDE, JSON.stringify(updated));
+    try {
+      if (type === 'workbook') {
+        const newHistory: WorkbookHistory = { id, date, sentences: data as Sentence[] };
+        const updated = [newHistory, ...workbookHistory].slice(0, MAX_HISTORY);
+        setWorkbookHistory(updated);
+        localStorage.setItem(STORAGE_KEY_WORKBOOK, JSON.stringify(updated));
+      } else if (type === 'studyguide') {
+        const guideData = data as StudyGuideData;
+        const newHistory: StudyGuideHistory = { id, date, university: guideData.university, data: guideData };
+        const updated = [newHistory, ...studyGuideHistory].slice(0, MAX_HISTORY);
+        setStudyGuideHistory(updated);
+        localStorage.setItem(STORAGE_KEY_STUDYGUIDE, JSON.stringify(updated));
+      } else if (type === 'answersheet') {
+        const sheetData = data as UniversityAnswerSheetData;
+        const newHistory: AnswerSheetHistory = { id, date, university: sheetData.university, year: sheetData.year, data: sheetData };
+        // 해설지는 데이터가 커서 최대 2개만 저장
+        const updated = [newHistory, ...answerSheetHistory].slice(0, 2);
+        setAnswerSheetHistory(updated);
+        localStorage.setItem(STORAGE_KEY_ANSWERSHEET, JSON.stringify(updated));
+      }
+    } catch (err) {
+      console.warn('히스토리 저장 실패 (용량 초과 가능):', err);
+      // 저장 실패 시 기존 히스토리 삭제 후 재시도
+      if (type === 'answersheet') {
+        try {
+          const sheetData = data as UniversityAnswerSheetData;
+          const newHistory: AnswerSheetHistory = { id, date, university: sheetData.university, year: sheetData.year, data: sheetData };
+          setAnswerSheetHistory([newHistory]);
+          localStorage.setItem(STORAGE_KEY_ANSWERSHEET, JSON.stringify([newHistory]));
+        } catch {
+          console.warn('해설지 히스토리 저장 불가 - 용량 초과');
+        }
+      }
     }
   };
 
@@ -121,9 +172,12 @@ function App() {
     if (type === 'workbook') {
       const item = workbookHistory.find(h => h.id === id);
       if (item) setAnalyzedSentences(item.sentences);
-    } else {
+    } else if (type === 'studyguide') {
       const item = studyGuideHistory.find(h => h.id === id);
       if (item) setStudyGuideData(item.data);
+    } else if (type === 'answersheet') {
+      const item = answerSheetHistory.find(h => h.id === id);
+      if (item) setAnswerSheetData(item.data);
     }
   };
 
@@ -133,12 +187,18 @@ function App() {
     setSelectedPDF(pdfType);
     setAnalyzedSentences([]);
     setStudyGuideData(null);
+    setAnswerSheetData(null);
     setError('');
   };
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
-      setError(selectedPDF === 'workbook' ? '문장을 입력해주세요.' : '시험 분석 데이터를 입력해주세요.');
+      const errorMessages: Record<PDFType, string> = {
+        workbook: '문장을 입력해주세요.',
+        studyguide: '시험 분석 데이터를 입력해주세요.',
+        answersheet: '시험 데이터를 입력해주세요.',
+      };
+      setError(errorMessages[selectedPDF]);
       return;
     }
     if (!apiKey) {
@@ -150,6 +210,7 @@ function App() {
     setIsLoading(true);
     setAnalyzedSentences([]);
     setStudyGuideData(null);
+    setAnswerSheetData(null);
 
     try {
       if (selectedPDF === 'workbook') {
@@ -164,7 +225,7 @@ function App() {
         );
         setAnalyzedSentences(results);
         saveToHistory('workbook', results);
-      } else {
+      } else if (selectedPDF === 'studyguide') {
         const result = await analyzeStudyGuide(
           inputText,
           apiKey,
@@ -174,6 +235,16 @@ function App() {
         );
         setStudyGuideData(result);
         saveToHistory('studyguide', result);
+      } else if (selectedPDF === 'answersheet') {
+        const result = await analyzeAnswerSheet(
+          inputText,
+          apiKey,
+          (status) => {
+            setProgressStatus(status);
+          }
+        );
+        setAnswerSheetData(result);
+        saveToHistory('answersheet', result);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '분석 중 오류가 발생했습니다.');
@@ -187,18 +258,25 @@ function App() {
     if (selectedPDF === 'studyguide' && studyGuideData) {
       return <StudyGuidePDF data={studyGuideData} />;
     }
+    if (selectedPDF === 'answersheet' && answerSheetData) {
+      return <UniversityAnswerSheetPDF data={answerSheetData} />;
+    }
     return <WorkbookPDF sentences={analyzedSentences} />;
   };
 
-  const hasResults = selectedPDF === 'workbook'
-    ? analyzedSentences.length > 0
-    : studyGuideData !== null;
+  const hasResults =
+    (selectedPDF === 'workbook' && analyzedSentences.length > 0) ||
+    (selectedPDF === 'studyguide' && studyGuideData !== null) ||
+    (selectedPDF === 'answersheet' && answerSheetData !== null);
 
   const getResultText = () => {
     if (selectedPDF === 'workbook') {
       return `${analyzedSentences.length}개 문장 분석 완료`;
     }
-    return `${studyGuideData?.university || ''} 학습 가이드 생성 완료`;
+    if (selectedPDF === 'studyguide') {
+      return `${studyGuideData?.university || ''} 학습 가이드 생성 완료`;
+    }
+    return `${answerSheetData?.university || ''} ${answerSheetData?.year || ''} 해설지 생성 완료`;
   };
 
   const getLoadingText = () => {
@@ -291,31 +369,44 @@ function App() {
 
           {/* 히스토리 섹션 */}
           {((selectedPDF === 'workbook' && workbookHistory.length > 0) ||
-            (selectedPDF === 'studyguide' && studyGuideHistory.length > 0)) && (
+            (selectedPDF === 'studyguide' && studyGuideHistory.length > 0) ||
+            (selectedPDF === 'answersheet' && answerSheetHistory.length > 0)) && (
             <div className="history-section">
               <h3>최근 기록 (최대 5개)</h3>
               <div className="history-list">
-                {selectedPDF === 'workbook'
-                  ? workbookHistory.map((item) => (
-                      <button
-                        key={item.id}
-                        className="history-item"
-                        onClick={() => loadFromHistory('workbook', item.id)}
-                      >
-                        <span className="history-date">{item.date}</span>
-                        <span className="history-info">{item.sentences.length}개 문장</span>
-                      </button>
-                    ))
-                  : studyGuideHistory.map((item) => (
-                      <button
-                        key={item.id}
-                        className="history-item"
-                        onClick={() => loadFromHistory('studyguide', item.id)}
-                      >
-                        <span className="history-date">{item.date}</span>
-                        <span className="history-info">{item.university}</span>
-                      </button>
-                    ))}
+                {selectedPDF === 'workbook' &&
+                  workbookHistory.map((item) => (
+                    <button
+                      key={item.id}
+                      className="history-item"
+                      onClick={() => loadFromHistory('workbook', item.id)}
+                    >
+                      <span className="history-date">{item.date}</span>
+                      <span className="history-info">{item.sentences.length}개 문장</span>
+                    </button>
+                  ))}
+                {selectedPDF === 'studyguide' &&
+                  studyGuideHistory.map((item) => (
+                    <button
+                      key={item.id}
+                      className="history-item"
+                      onClick={() => loadFromHistory('studyguide', item.id)}
+                    >
+                      <span className="history-date">{item.date}</span>
+                      <span className="history-info">{item.university}</span>
+                    </button>
+                  ))}
+                {selectedPDF === 'answersheet' &&
+                  answerSheetHistory.map((item) => (
+                    <button
+                      key={item.id}
+                      className="history-item"
+                      onClick={() => loadFromHistory('answersheet', item.id)}
+                    >
+                      <span className="history-date">{item.date}</span>
+                      <span className="history-info">{item.university} {item.year}</span>
+                    </button>
+                  ))}
               </div>
             </div>
           )}

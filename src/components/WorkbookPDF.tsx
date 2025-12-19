@@ -7,18 +7,18 @@ import {
   StyleSheet,
   Font,
 } from '@react-pdf/renderer';
-import { Sentence, DAY_NUMBER } from '../data/sentences';
+import { Sentence } from '../data/types';
 
-// 나눔고딕 폰트 등록 (Google Fonts CDN)
+// Pretendard 폰트 등록
 Font.register({
-  family: 'NanumGothic',
+  family: 'Pretendard',
   fonts: [
     {
-      src: 'https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Regular.ttf',
+      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf',
       fontWeight: 'normal',
     },
     {
-      src: 'https://cdn.jsdelivr.net/gh/spoqa/spoqa-han-sans@latest/Subset/SpoqaHanSansNeo/SpoqaHanSansNeo-Bold.ttf',
+      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Bold.otf',
       fontWeight: 'bold',
     },
   ],
@@ -32,12 +32,12 @@ const MEDIUM_GRAY = '#666666';
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: 'NanumGothic',
+    fontFamily: 'Pretendard',
     fontSize: 10,
   },
   coverPage: {
     padding: 40,
-    fontFamily: 'NanumGothic',
+    fontFamily: 'Pretendard',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
@@ -233,7 +233,7 @@ const WorkbookPDF: React.FC<WorkbookPDFProps> = ({ sentences }) => (
 
     {/* Problem Section */}
     <Page size="A4" style={styles.page}>
-      <Text style={styles.sectionTitle}>DAY {DAY_NUMBER}. 문제</Text>
+      <Text style={styles.sectionTitle}>문제</Text>
       {sentences.map((sentence) => (
         <ProblemSection key={sentence.num} sentence={sentence} />
       ))}
@@ -242,7 +242,7 @@ const WorkbookPDF: React.FC<WorkbookPDFProps> = ({ sentences }) => (
 
     {/* Answer Section */}
     <Page size="A4" style={styles.page}>
-      <Text style={styles.sectionTitle}>DAY {DAY_NUMBER}. 해설</Text>
+      <Text style={styles.sectionTitle}>해설</Text>
       {sentences.map((sentence) => (
         <AnswerSection key={sentence.num} sentence={sentence} />
       ))}
