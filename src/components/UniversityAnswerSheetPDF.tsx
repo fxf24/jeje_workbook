@@ -53,7 +53,6 @@ const styles = StyleSheet.create({
     padding: '15mm 18mm 20mm 18mm',
     fontFamily: 'Pretendard',
     fontSize: 9,
-    lineHeight: 1.5,
     color: C.black,
     backgroundColor: C.white,
   },
@@ -82,88 +81,106 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
 
-  // ===== Voca Preview 페이지 =====
+  // ===== Voca Preview 페이지 (건국대 2025 스타일) =====
   vocaPreviewHeader: {
-    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 15,
   },
+  vocaPreviewLeft: {
+    flex: 1,
+  },
   vocaPreviewTitle: {
-    fontSize: 28,
+    fontSize: 32,
     color: C.purple,
     fontStyle: 'italic',
-    marginBottom: 5,
+    marginBottom: 3,
   },
-  vocaPreviewSubtitle: {
-    fontSize: 14,
+  vocaPreviewUniversity: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: C.black,
-    marginBottom: 8,
+  },
+  vocaPreviewRight: {
+    alignItems: 'flex-end',
   },
   quizletBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
     backgroundColor: C.purple,
     paddingVertical: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     borderRadius: 3,
+    marginBottom: 5,
   },
   quizletText: {
     color: C.white,
     fontSize: 9,
     fontWeight: 'bold',
   },
+  qrPlaceholder: {
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    borderColor: C.tableBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  qrText: {
+    fontSize: 6,
+    color: C.grayLight,
+  },
 
-  // Voca 테이블 (2열 레이아웃)
+  // Voca 테이블 (2열 레이아웃 - 건국대 스타일)
   vocaContainer: {
     flexDirection: 'row',
-    gap: 12,
   },
   vocaColumn: {
     flex: 1,
+    marginRight: 8,
+  },
+  vocaColumnRight: {
+    flex: 1,
+    marginLeft: 8,
   },
   vocaTable: {
-    borderWidth: 1,
-    borderColor: C.tableBorder,
+    borderTopWidth: 1,
+    borderTopColor: C.tableBorder,
   },
   vocaRow: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
     borderBottomColor: C.tableBorder,
-    minHeight: 18,
+    minHeight: 17,
+    alignItems: 'center',
   },
   vocaRowEven: {
     flexDirection: 'row',
     borderBottomWidth: 0.5,
     borderBottomColor: C.tableBorder,
-    backgroundColor: C.bgLight,
-    minHeight: 18,
+    minHeight: 17,
+    alignItems: 'center',
   },
   vocaCellNum: {
-    width: '10%',
-    paddingVertical: 3,
-    paddingHorizontal: 4,
+    width: 22,
+    paddingVertical: 2,
+    paddingHorizontal: 3,
     fontSize: 7,
     color: C.purple,
     fontWeight: 'bold',
     textAlign: 'center',
-    borderRightWidth: 0.5,
-    borderRightColor: C.tableBorder,
   },
   vocaCellWord: {
-    width: '45%',
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    fontSize: 7.5,
+    flex: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    fontSize: 8,
     fontWeight: 'bold',
-    borderRightWidth: 0.5,
-    borderRightColor: C.tableBorder,
   },
   vocaCellMeaning: {
-    width: '45%',
-    paddingVertical: 3,
-    paddingHorizontal: 6,
-    fontSize: 7.5,
+    flex: 1,
+    paddingVertical: 2,
+    paddingHorizontal: 4,
+    fontSize: 8,
     color: C.grayDark,
   },
 
@@ -180,20 +197,29 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   quickVerLeft: {
-    width: '35%',
+    flex: 35,
     paddingRight: 15,
   },
   quickVerRight: {
-    width: '65%',
+    flex: 65,
+  },
+  quickVerUniversityBox: {
+    backgroundColor: C.purpleLight,
+    borderWidth: 1,
+    borderColor: C.purple,
+    borderRadius: 3,
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    alignSelf: 'flex-start',
   },
   quickVerUniversity: {
-    fontSize: 14,
+    fontSize: 12,
     color: C.purple,
     fontWeight: 'bold',
-    marginBottom: 5,
   },
   quickVerYear: {
-    fontSize: 48,
+    fontSize: 56,
     fontWeight: 'bold',
     color: C.black,
     letterSpacing: -2,
@@ -246,6 +272,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderColor: C.tableBorder,
   },
+  // 5열 그리드용 스타일 (Quick Ver 건국대 스타일)
+  answerGridCellNum5: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 2,
+    textAlign: 'center',
+    fontSize: 8,
+    fontWeight: 'bold',
+    color: C.purple,
+    borderRightWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: C.tableBorder,
+  },
+  answerGridCellAnswer5: {
+    flex: 1,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+    borderRightWidth: 0.5,
+    borderBottomWidth: 0.5,
+    borderColor: C.tableBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   circledAnswer: {
     width: 18,
     height: 18,
@@ -254,7 +303,6 @@ const styles = StyleSheet.create({
     borderColor: C.purple,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 'auto',
   },
   circledAnswerText: {
     fontSize: 9,
@@ -273,11 +321,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   problemLeft: {
-    width: '38%',
+    width: 200,
     paddingRight: 12,
   },
   problemRight: {
-    width: '62%',
+    flex: 1,
     paddingLeft: 12,
     borderLeftWidth: 1,
     borderLeftColor: C.border,
@@ -299,7 +347,7 @@ const styles = StyleSheet.create({
   // 한국어 번역
   translationText: {
     fontSize: 8.5,
-    lineHeight: 1.6,
+    lineHeight: 1.5,
     color: C.black,
     marginBottom: 10,
   },
@@ -368,7 +416,7 @@ const styles = StyleSheet.create({
   },
   explanationText: {
     fontSize: 8,
-    lineHeight: 1.6,
+    lineHeight: 1.5,
     color: C.grayDark,
     paddingLeft: 4,
   },
@@ -385,12 +433,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   synonymWord: {
-    width: '45%',
+    width: 80,
     fontSize: 8,
     color: C.black,
   },
   synonymMeaning: {
-    width: '55%',
+    flex: 1,
     fontSize: 8,
     color: C.grayDark,
   },
@@ -420,7 +468,7 @@ const styles = StyleSheet.create({
   },
   stepContent: {
     fontSize: 8,
-    lineHeight: 1.6,
+    lineHeight: 1.5,
     color: C.grayDark,
     paddingLeft: 4,
   },
@@ -440,52 +488,71 @@ const CircledAnswer: React.FC<{ answer: string }> = ({ answer }) => (
 );
 
 // Voca Preview 페이지 컴포넌트
+const ROWS_PER_COLUMN = 25; // 한 열당 25행 고정
+
 const VocaPreviewPage: React.FC<{
   data: UniversityAnswerSheetData;
   vocabs: AnswerSheetVocab[];
   pageNum: number;
 }> = ({ data, vocabs, pageNum }) => {
-  // 2열로 나누기
-  const midPoint = Math.ceil(vocabs.length / 2);
-  const leftColumn = vocabs.slice(0, midPoint);
-  const rightColumn = vocabs.slice(midPoint);
+  // 고정 25행씩 2열 = 50개 슬롯
+  const leftColumn: (AnswerSheetVocab | null)[] = [];
+  const rightColumn: (AnswerSheetVocab | null)[] = [];
+
+  // 데이터 채우기
+  for (let i = 0; i < ROWS_PER_COLUMN; i++) {
+    leftColumn.push(vocabs[i] || null);
+    rightColumn.push(vocabs[i + ROWS_PER_COLUMN] || null);
+  }
+
+  // 대학 이름 포맷팅 (건국대학교 -> 건대)
+  const formatUniversity = (name: string) => {
+    return name.replace('대학교', '대').replace('대학', '대');
+  };
 
   return (
     <Page size="A4" style={styles.page}>
-      {/* 헤더 */}
+      {/* 헤더 - 건국대 2025 스타일 */}
       <View style={styles.vocaPreviewHeader}>
-        <Text style={styles.vocaPreviewTitle}>Voca Preview</Text>
-        <Text style={styles.vocaPreviewSubtitle}>
-          {data.university.replace('대학교', '대')} {data.year}
-        </Text>
-        <View style={styles.quizletBadge}>
-          <Text style={styles.quizletText}>Quizlet!</Text>
+        <View style={styles.vocaPreviewLeft}>
+          <Text style={styles.vocaPreviewTitle}>Voca Preview</Text>
+          <Text style={styles.vocaPreviewUniversity}>
+            {formatUniversity(data.university)} {data.year}
+          </Text>
+        </View>
+        <View style={styles.vocaPreviewRight}>
+          <View style={styles.quizletBadge}>
+            <Text style={styles.quizletText}>Quizlet!</Text>
+          </View>
+          <View style={styles.qrPlaceholder}>
+            <Text style={styles.qrText}>QR</Text>
+          </View>
         </View>
       </View>
 
-      {/* 2열 테이블 */}
+      {/* 2열 테이블 - 건국대 스타일 */}
       <View style={styles.vocaContainer}>
         {/* 왼쪽 열 */}
         <View style={styles.vocaColumn}>
           <View style={styles.vocaTable}>
             {leftColumn.map((vocab, i) => (
-              <View key={`left-${i}`} style={i % 2 === 0 ? styles.vocaRow : styles.vocaRowEven}>
-                <Text style={styles.vocaCellNum}>{vocab.questionNum}</Text>
-                <Text style={styles.vocaCellWord}>{vocab.word}</Text>
-                <Text style={styles.vocaCellMeaning}>{vocab.meaning}</Text>
+              <View key={`left-${i}`} style={styles.vocaRow}>
+                <Text style={styles.vocaCellNum}>{vocab?.questionNum || ' '}</Text>
+                <Text style={styles.vocaCellWord}>{vocab?.word || ' '}</Text>
+                <Text style={styles.vocaCellMeaning}>{vocab?.meaning || ' '}</Text>
               </View>
             ))}
           </View>
         </View>
 
         {/* 오른쪽 열 */}
-        <View style={styles.vocaColumn}>
+        <View style={styles.vocaColumnRight}>
           <View style={styles.vocaTable}>
             {rightColumn.map((vocab, i) => (
-              <View key={`right-${i}`} style={i % 2 === 0 ? styles.vocaRow : styles.vocaRowEven}>
-                <Text style={styles.vocaCellNum}>{vocab.questionNum}</Text>
-                <Text style={styles.vocaCellWord}>{vocab.word}</Text>
-                <Text style={styles.vocaCellMeaning}>{vocab.meaning}</Text>
+              <View key={`right-${i}`} style={styles.vocaRow}>
+                <Text style={styles.vocaCellNum}>{vocab?.questionNum || ' '}</Text>
+                <Text style={styles.vocaCellWord}>{vocab?.word || ' '}</Text>
+                <Text style={styles.vocaCellMeaning}>{vocab?.meaning || ' '}</Text>
               </View>
             ))}
           </View>
@@ -502,72 +569,69 @@ const VocaPreviewPage: React.FC<{
   );
 };
 
-// Quick Ver 정답표 페이지
-const QuickVerPage: React.FC<{
+// Quick Ver 정답표 헤더 컴포넌트 (페이지 상단에 배치)
+const QuickVerHeader: React.FC<{
   data: UniversityAnswerSheetData;
-  pageNum: number;
-}> = ({ data, pageNum }) => {
-  // 10문제씩 행으로 나누기 (5행 x 2세트 = 50문제, 또는 4행 x 10열 = 40문제)
+}> = ({ data }) => {
+  // 5문제씩 행으로 나누기 (건국대 스타일: 5열 x 8행 = 40문제)
+  const COLS = 5;
   const rows: AnswerSheetProblem[][] = [];
-  for (let i = 0; i < data.problems.length; i += 10) {
-    rows.push(data.problems.slice(i, i + 10));
+  for (let i = 0; i < data.problems.length; i += COLS) {
+    rows.push(data.problems.slice(i, i + COLS));
   }
 
+  // 대학 이름 포맷팅
+  const formatUniversity = (name: string) => {
+    return name.replace('대학교', '대').replace('대학', '대');
+  };
+
   return (
-    <Page size="A4" style={styles.quickVerPage}>
-      {/* 상단 레이아웃: 왼쪽 대학/년도 + 오른쪽 정답표 */}
-      <View style={styles.quickVerContainer}>
-        {/* 왼쪽: 대학명 + 년도 */}
-        <View style={styles.quickVerLeft}>
+    <View style={styles.quickVerContainer}>
+      {/* 왼쪽: 대학명 (박스) + 년도 */}
+      <View style={styles.quickVerLeft}>
+        <View style={styles.quickVerUniversityBox}>
           <Text style={styles.quickVerUniversity}>
-            {data.university.replace('대학교', '대')}
+            {formatUniversity(data.university)}
           </Text>
-          <Text style={styles.quickVerYear}>{data.year}</Text>
         </View>
-
-        {/* 오른쪽: Quick Ver 정답표 */}
-        <View style={styles.quickVerRight}>
-          <Text style={styles.quickVerTitle}>Q U I C K   V E R .</Text>
-          <View style={styles.answerGrid}>
-            {rows.map((row, rowIdx) => (
-              <React.Fragment key={rowIdx}>
-                {/* 문제 번호 행 */}
-                <View style={styles.answerGridRow}>
-                  {row.map((p) => (
-                    <Text key={`num-${p.num}`} style={styles.answerGridCellNum}>
-                      {String(p.num).padStart(2, '0')}
-                    </Text>
-                  ))}
-                  {Array(10 - row.length).fill(null).map((_, i) => (
-                    <Text key={`empty-num-${i}`} style={styles.answerGridCellNum}> </Text>
-                  ))}
-                </View>
-                {/* 정답 행 */}
-                <View style={styles.answerGridRow}>
-                  {row.map((p) => (
-                    <View key={`ans-${p.num}`} style={styles.answerGridCellAnswer}>
-                      <CircledAnswer answer={String(p.answer)} />
-                    </View>
-                  ))}
-                  {Array(10 - row.length).fill(null).map((_, i) => (
-                    <View key={`empty-ans-${i}`} style={styles.answerGridCellAnswer}>
-                      <Text> </Text>
-                    </View>
-                  ))}
-                </View>
-              </React.Fragment>
-            ))}
-          </View>
-        </View>
+        <Text style={styles.quickVerYear}>{data.year}</Text>
       </View>
 
-      {/* 푸터 */}
-      <View style={styles.footer} fixed>
-        <Text style={styles.footerLeft}>제제편입</Text>
-        <Text style={styles.footerCenter}>{pageNum}</Text>
-        <Text style={styles.footerRight}>FINAL - Pick</Text>
+      {/* 오른쪽: Quick Ver 정답표 (5열 그리드) */}
+      <View style={styles.quickVerRight}>
+        <Text style={styles.quickVerTitle}>Q U I C K   V E R .</Text>
+        <View style={styles.answerGrid}>
+          {rows.map((row, rowIdx) => (
+            <React.Fragment key={rowIdx}>
+              {/* 문제 번호 행 */}
+              <View style={styles.answerGridRow}>
+                {row.map((p) => (
+                  <Text key={`num-${p.num}`} style={styles.answerGridCellNum5}>
+                    {String(p.num).padStart(2, '0')}
+                  </Text>
+                ))}
+                {Array(COLS - row.length).fill(null).map((_, i) => (
+                  <Text key={`empty-num-${i}`} style={styles.answerGridCellNum5}> </Text>
+                ))}
+              </View>
+              {/* 정답 행 */}
+              <View style={styles.answerGridRow}>
+                {row.map((p) => (
+                  <View key={`ans-${p.num}`} style={styles.answerGridCellAnswer5}>
+                    <CircledAnswer answer={String(p.answer)} />
+                  </View>
+                ))}
+                {Array(COLS - row.length).fill(null).map((_, i) => (
+                  <View key={`empty-ans-${i}`} style={styles.answerGridCellAnswer5}>
+                    <Text> </Text>
+                  </View>
+                ))}
+              </View>
+            </React.Fragment>
+          ))}
+        </View>
       </View>
-    </Page>
+    </View>
   );
 };
 
@@ -575,9 +639,10 @@ const QuickVerPage: React.FC<{
 const SynonymProblemExplanation: React.FC<{
   problem: AnswerSheetProblem;
 }> = ({ problem }) => {
-  const correctOption = problem.options.find(o => o.isCorrect);
+  const options = problem.options || [];
+  const correctOption = options.find(o => o.isCorrect);
   // 표시할 텍스트 우선순위: passage > translation > questionText
-  const displayText = problem.passage || problem.translation || problem.questionText || '';
+  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
 
   return (
     <View style={styles.problemLayout}>
@@ -594,13 +659,13 @@ const SynonymProblemExplanation: React.FC<{
 
         {/* 선택지 */}
         <View style={styles.optionsContainer}>
-          {problem.options.map((opt, idx) => (
+          {options.map((opt, idx) => (
             <View key={idx} style={styles.optionRow}>
               <Text style={styles.optionNum}>
                 {['①', '②', '③', '④', '⑤'][idx]}
               </Text>
               <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
-                {opt.text}
+                {opt.text || ' '}
               </Text>
             </View>
           ))}
@@ -615,11 +680,11 @@ const SynonymProblemExplanation: React.FC<{
             <Text style={styles.sectionNumber}>1</Text>
             <Text style={styles.sectionTitle}>동의어 해설</Text>
             <Text style={styles.sectionTitleWord}>
-              - {correctOption?.text || problem.answer}
+              - {correctOption?.text || String(problem.answer) || ' '}
             </Text>
           </View>
           <Text style={styles.explanationText}>
-            ✏️ {problem.explanation || '해설 없음'}
+            {problem.explanation || '해설 없음'}
           </Text>
         </View>
 
@@ -632,9 +697,9 @@ const SynonymProblemExplanation: React.FC<{
             </View>
             <View style={styles.synonymTable}>
               {problem.relatedVocab.map((vocab, idx) => {
-                const parts = vocab.split(' ');
-                const word = parts[0];
-                const meaning = parts.slice(1).join(' ');
+                const parts = (vocab || '').split(' ');
+                const word = parts[0] || ' ';
+                const meaning = parts.slice(1).join(' ') || ' ';
                 return (
                   <View key={idx} style={styles.synonymRow}>
                     <Text style={styles.synonymWord}>{word}</Text>
@@ -654,16 +719,17 @@ const SynonymProblemExplanation: React.FC<{
 const BlankProblemExplanation: React.FC<{
   problem: AnswerSheetProblem;
 }> = ({ problem }) => {
-  const correctOption = problem.options.find(o => o.isCorrect);
+  const options = problem.options || [];
+  const correctOption = options.find(o => o.isCorrect);
   // 표시할 텍스트 우선순위: passage > translation > questionText
-  const displayText = problem.passage || problem.translation || problem.questionText || '';
+  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
 
   return (
     <View style={styles.problemLayout}>
       {/* 왼쪽: 지문/번역 + 선택지 */}
       <View style={styles.problemLeft}>
         <View style={styles.problemNumBox}>
-          <Text style={styles.problemNum}>{String(problem.num).padStart(2, '0')}</Text>
+          <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
         </View>
 
         {/* 지문 또는 번역 */}
@@ -673,13 +739,13 @@ const BlankProblemExplanation: React.FC<{
 
         {/* 선택지 */}
         <View style={styles.optionsContainer}>
-          {problem.options.map((opt, idx) => (
+          {options.map((opt, idx) => (
             <View key={idx} style={styles.optionRow}>
               <Text style={styles.optionNum}>
                 {['①', '②', '③', '④', '⑤'][idx]}
               </Text>
               <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
-                {opt.text}
+                {opt.text || ' '}
               </Text>
             </View>
           ))}
@@ -688,6 +754,11 @@ const BlankProblemExplanation: React.FC<{
 
       {/* 오른쪽: Step 1/2/3 해설 */}
       <View style={styles.problemRight}>
+        {/* keyPoint가 있으면 상단에 표시 */}
+        {problem.keyPoint && (
+          <Text style={styles.stepCorrectAnswer}>{problem.keyPoint}</Text>
+        )}
+
         {/* Step 1: 빈칸 타게팅 */}
         <View style={styles.stepSection}>
           <View style={styles.stepHeader}>
@@ -695,7 +766,7 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepTitle}>Step 1) 빈칸 타게팅</Text>
           </View>
           <Text style={styles.stepContent}>
-            {problem.logicFlow || problem.keyPoint || '빈칸이 포함된 문장의 구조와 문맥을 분석합니다.'}
+            {problem.step1 || problem.logicFlow || '빈칸이 포함된 문장의 구조와 문맥을 분석합니다.'}
           </Text>
         </View>
 
@@ -706,7 +777,7 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepTitle}>Step 2) 근거 확인</Text>
           </View>
           <Text style={styles.stepContent}>
-            {problem.explanation || '지문에서 정답의 근거가 되는 핵심 표현을 찾습니다.'}
+            {problem.step2 || problem.explanation || '지문에서 정답의 근거가 되는 핵심 표현을 찾습니다.'}
           </Text>
         </View>
 
@@ -716,19 +787,99 @@ const BlankProblemExplanation: React.FC<{
             <Text style={styles.stepNumber}>3</Text>
             <Text style={styles.stepTitle}>Step 3) 보기 판단</Text>
           </View>
-          {problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0 ? (
-            problem.wrongAnswerAnalysis.map((analysis, idx) => (
-              <Text key={idx} style={styles.stepContent}>{analysis}</Text>
-            ))
-          ) : (
-            <Text style={styles.stepContent}>
-              각 선택지를 분석하여 정답을 도출합니다.
+          <Text style={styles.stepContent}>
+            {problem.step3 || (problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0
+              ? problem.wrongAnswerAnalysis.join('\n')
+              : '각 선택지를 분석하여 정답을 도출합니다.')}
+          </Text>
+          {!problem.step3 && (
+            <Text style={styles.stepCorrectAnswer}>
+              정답은 {problem.answer}번 {correctOption?.text || ''}입니다.
             </Text>
           )}
-          <Text style={styles.stepCorrectAnswer}>
-            정답은 {problem.answer}번 {correctOption?.text || ''}입니다.
+        </View>
+      </View>
+    </View>
+  );
+};
+
+// 독해 문제 해설 컴포넌트 (지문 요지 + 정답 해설 + 오답 소거)
+const ReadingProblemExplanation: React.FC<{
+  problem: AnswerSheetProblem;
+}> = ({ problem }) => {
+  const options = problem.options || [];
+  const displayText = problem.passage || problem.translation || problem.questionText || ' ';
+
+  return (
+    <View style={styles.problemLayout}>
+      {/* 왼쪽: 지문 + 선택지 */}
+      <View style={styles.problemLeft}>
+        <View style={styles.problemNumBox}>
+          <Text style={styles.problemNum}>{String(problem.num || 0).padStart(2, '0')}</Text>
+        </View>
+
+        <Text style={styles.translationText}>
+          {displayText}
+        </Text>
+
+        {/* 선택지가 있을 때만 표시 */}
+        {options.length > 0 && (
+          <View style={styles.optionsContainer}>
+            {options.map((opt, idx) => (
+              <View key={idx} style={styles.optionRow}>
+                <Text style={styles.optionNum}>
+                  {['①', '②', '③', '④', '⑤'][idx]}
+                </Text>
+                <Text style={opt.isCorrect ? styles.optionCorrect : styles.optionText}>
+                  {opt.text || ' '}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* 오른쪽: keyPoint + 지문 요지 + 정답 해설 + 오답 소거 */}
+      <View style={styles.problemRight}>
+        {/* keyPoint 상단 표시 */}
+        {problem.keyPoint && (
+          <Text style={styles.stepCorrectAnswer}>{problem.keyPoint}</Text>
+        )}
+
+        {/* 1. 지문 요지 / 한줄 요약 */}
+        <View style={styles.stepSection}>
+          <View style={styles.stepHeader}>
+            <Text style={styles.stepNumber}>1</Text>
+            <Text style={styles.stepTitle}>지문 요지</Text>
+          </View>
+          <Text style={styles.stepContent}>
+            {problem.passageSummary || problem.logicFlow || '지문의 핵심 내용을 요약합니다.'}
           </Text>
         </View>
+
+        {/* 2. 정답 해설 */}
+        <View style={styles.stepSection}>
+          <View style={styles.stepHeader}>
+            <Text style={styles.stepNumber}>2</Text>
+            <Text style={styles.stepTitle}>정답 해설</Text>
+          </View>
+          <Text style={styles.stepContent}>
+            {problem.explanation || '정답의 근거를 설명합니다.'}
+          </Text>
+        </View>
+
+        {/* 3. 오답 소거 */}
+        {problem.wrongAnswerAnalysis && problem.wrongAnswerAnalysis.length > 0 && (
+          <View style={styles.stepSection}>
+            <View style={styles.stepHeader}>
+              <Text style={styles.stepNumber}>3</Text>
+              <Text style={styles.stepTitle}>오답 소거</Text>
+            </View>
+            {problem.wrongAnswerAnalysis.map((analysis, idx) => (
+              <Text key={idx} style={styles.stepContent}>{analysis}</Text>
+            ))}
+          </View>
+        )}
       </View>
     </View>
   );
@@ -737,14 +888,25 @@ const BlankProblemExplanation: React.FC<{
 // 문제 해설 래퍼 컴포넌트
 const ProblemExplanation: React.FC<{ problem: AnswerSheetProblem }> = ({ problem }) => {
   // 문제 유형에 따라 다른 레이아웃 사용
-  const isSynonymType = problem.questionType === '동의어' ||
-                        problem.questionType === '어휘' ||
-                        problem.questionType?.includes('동의어');
+  const questionType = problem.questionType?.toLowerCase() || '';
+
+  const isSynonymType = questionType.includes('동의어') ||
+                        questionType.includes('어휘') ||
+                        questionType.includes('vocab');
+
+  const isReadingType = questionType.includes('독해') ||
+                        questionType.includes('주제') ||
+                        questionType.includes('요지') ||
+                        questionType.includes('제목') ||
+                        questionType.includes('내용') ||
+                        questionType.includes('reading');
 
   return (
-    <View style={styles.problemContainer} wrap={false}>
+    <View style={styles.problemContainer}>
       {isSynonymType ? (
         <SynonymProblemExplanation problem={problem} />
+      ) : isReadingType ? (
+        <ReadingProblemExplanation problem={problem} />
       ) : (
         <BlankProblemExplanation problem={problem} />
       )}
@@ -752,13 +914,17 @@ const ProblemExplanation: React.FC<{ problem: AnswerSheetProblem }> = ({ problem
   );
 };
 
-// 해설 페이지 컴포넌트
+// 해설 페이지 컴포넌트 (정답표 + 해설을 같은 페이지에서 시작)
 const ExplanationPages: React.FC<{
   data: UniversityAnswerSheetData;
   startPageNum: number;
 }> = ({ data, startPageNum }) => {
   return (
     <Page size="A4" style={styles.page}>
+      {/* 정답표 헤더 (첫 페이지 상단) */}
+      <QuickVerHeader data={data} />
+
+      {/* 문제 해설들 - wrap 속성으로 자동 페이지 분할 */}
       {data.problems.map((problem) => (
         <ProblemExplanation key={problem.num} problem={problem} />
       ))}
@@ -789,8 +955,7 @@ const UniversityAnswerSheetPDF: React.FC<UniversityAnswerSheetPDFProps> = ({ dat
 
   // 페이지 번호 계산
   const vocaPageCount = vocabPages.length;
-  const quickVerPageNum = vocaPageCount + 1;
-  const explanationStartPageNum = quickVerPageNum + 1;
+  const explanationStartPageNum = vocaPageCount + 1;
 
   return (
     <Document>
@@ -804,11 +969,10 @@ const UniversityAnswerSheetPDF: React.FC<UniversityAnswerSheetPDFProps> = ({ dat
         />
       ))}
 
-      {/* Quick Ver 정답표 페이지 */}
-      <QuickVerPage data={data} pageNum={quickVerPageNum} />
-
-      {/* 문제 해설 페이지들 */}
-      <ExplanationPages data={data} startPageNum={explanationStartPageNum} />
+      {/* 정답표 + 문제 해설 페이지들 (같은 페이지에서 시작) */}
+      {data.problems && data.problems.length > 0 && (
+        <ExplanationPages data={data} startPageNum={explanationStartPageNum} />
+      )}
     </Document>
   );
 };
