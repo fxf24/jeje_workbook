@@ -366,9 +366,14 @@ export async function analyzeSentence(
   sentence: string,
   apiKey: string,
   pdfType: PDFType,
-  sentenceNum: number = 1
+  sentenceNum: number = 1,
+  provider: AIProvider = 'claude'
 ): Promise<Sentence> {
   const systemPrompt = PROMPTS[pdfType];
+
+  if (provider === 'gemini') {
+    return analyzeSentenceGemini(sentence, apiKey, pdfType, sentenceNum);
+  }
 
   const response = await fetch(CLAUDE_API_URL, {
     method: 'POST',
@@ -424,22 +429,87 @@ export async function analyzeSentence(
   }
 }
 
+// Gemini API를 사용한 문장 분석
+async function analyzeSentenceGemini(
+  sentence: string,
+  apiKey: string,
+  pdfType: PDFType,
+  sentenceNum: number = 1
+): Promise<Sentence> {
+  const systemPrompt = PROMPTS[pdfType];
+
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: `${systemPrompt}\n\n다음 영어 문장을 분석해주세요 (문장 번호: ${sentenceNum}):\n\n${sentence}`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 4096,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `Gemini API 오류: ${response.status} - ${errorData.error?.message || response.statusText}`
+    );
+  }
+
+  const data: GeminiResponse = await response.json();
+  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!textContent) {
+    throw new Error('Gemini API 응답에서 텍스트를 찾을 수 없습니다.');
+  }
+
+  try {
+    let text = textContent;
+    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('JSON을 찾을 수 없습니다.');
+    }
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      ...parsed,
+      num: sentenceNum,
+    };
+  } catch {
+    throw new Error('API 응답을 파싱할 수 없습니다: ' + textContent.substring(0, 200));
+  }
+}
+
 export async function analyzeSentences(
   sentences: string[],
   apiKey: string,
   pdfType: PDFType,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  provider: AIProvider = 'claude'
 ): Promise<Sentence[]> {
   const validSentences = sentences.map((s) => s.trim()).filter((s) => s.length > 0);
   const results: Sentence[] = new Array(validSentences.length);
-  const BATCH_SIZE = 10; // 동시에 10개씩 처리
+  // Gemini는 rate limit이 더 낮으므로 배치 크기 조정
+  const BATCH_SIZE = provider === 'gemini' ? 5 : 10;
   let completed = 0;
 
   for (let i = 0; i < validSentences.length; i += BATCH_SIZE) {
     const batch = validSentences.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map((sentence, batchIndex) => {
       const sentenceNum = i + batchIndex + 1;
-      return analyzeSentence(sentence, apiKey, pdfType, sentenceNum)
+      return analyzeSentence(sentence, apiKey, pdfType, sentenceNum, provider)
         .then((result) => {
           results[sentenceNum - 1] = result;
           completed++;
@@ -452,9 +522,9 @@ export async function analyzeSentences(
 
     await Promise.all(batchPromises);
 
-    // 배치 간 대기 (Rate limiting)
+    // 배치 간 대기 (Rate limiting) - Gemini는 더 긴 대기
     if (i + BATCH_SIZE < validSentences.length) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, provider === 'gemini' ? 1000 : 500));
     }
   }
 
@@ -465,12 +535,18 @@ export async function analyzeSentences(
 export async function analyzeStudyGuide(
   examData: string,
   apiKey: string,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
+  provider: AIProvider = 'claude'
 ): Promise<StudyGuideData> {
   const systemPrompt = STUDYGUIDE_PROMPT;
+  const providerLabel = provider === 'claude' ? 'Claude' : 'Gemini';
 
   if (onProgress) {
-    onProgress('AI 분석 시작...');
+    onProgress(`[${providerLabel}] AI 분석 시작...`);
+  }
+
+  if (provider === 'gemini') {
+    return analyzeStudyGuideGemini(examData, apiKey, onProgress);
   }
 
   const response = await fetch(CLAUDE_API_URL, {
@@ -524,6 +600,68 @@ export async function analyzeStudyGuide(
     return JSON.parse(jsonMatch[0]) as StudyGuideData;
   } catch {
     throw new Error('API 응답을 파싱할 수 없습니다: ' + textContent.text.substring(0, 200));
+  }
+}
+
+// Gemini API를 사용한 학습 가이드 분석
+async function analyzeStudyGuideGemini(
+  examData: string,
+  apiKey: string,
+  onProgress?: (status: string) => void
+): Promise<StudyGuideData> {
+  const systemPrompt = STUDYGUIDE_PROMPT;
+
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: `${systemPrompt}\n\n다음 대학별 편입 시험 경향 분석 데이터를 기반으로 종합적인 학습 가이드를 생성해주세요:\n\n${examData}`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 16384,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `Gemini API 오류: ${response.status} - ${errorData.error?.message || response.statusText}`
+    );
+  }
+
+  if (onProgress) {
+    onProgress('[Gemini] 응답 처리 중...');
+  }
+
+  const data: GeminiResponse = await response.json();
+  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!textContent) {
+    throw new Error('Gemini API 응답에서 텍스트를 찾을 수 없습니다.');
+  }
+
+  try {
+    let text = textContent;
+    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('JSON을 찾을 수 없습니다.');
+    }
+    return JSON.parse(jsonMatch[0]) as StudyGuideData;
+  } catch {
+    throw new Error('API 응답을 파싱할 수 없습니다: ' + textContent.substring(0, 200));
   }
 }
 

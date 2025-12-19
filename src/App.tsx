@@ -204,13 +204,11 @@ function App() {
       return;
     }
 
-    // 해설지는 선택된 AI provider에 따라 API 키 결정
-    const currentApiKey = selectedPDF === 'answersheet' && aiProvider === 'gemini'
-      ? geminiApiKey
-      : claudeApiKey;
+    // 선택된 AI provider에 따라 API 키 결정
+    const currentApiKey = aiProvider === 'gemini' ? geminiApiKey : claudeApiKey;
 
     if (!currentApiKey) {
-      const providerName = selectedPDF === 'answersheet' && aiProvider === 'gemini' ? 'Gemini' : 'Claude';
+      const providerName = aiProvider === 'gemini' ? 'Gemini' : 'Claude';
       setError(`${providerName} API 키가 설정되지 않았습니다. .env 파일을 확인해주세요.`);
       return;
     }
@@ -226,21 +224,23 @@ function App() {
         const sentenceList = inputText.split('\n');
         const results = await analyzeSentences(
           sentenceList,
-          claudeApiKey,
+          currentApiKey,
           selectedPDF,
           (current, total) => {
             setProgress({ current, total });
-          }
+          },
+          aiProvider
         );
         setAnalyzedSentences(results);
         saveToHistory('workbook', results);
       } else if (selectedPDF === 'studyguide') {
         const result = await analyzeStudyGuide(
           inputText,
-          claudeApiKey,
+          currentApiKey,
           (status) => {
             setProgressStatus(status);
-          }
+          },
+          aiProvider
         );
         setStudyGuideData(result);
         saveToHistory('studyguide', result);
@@ -341,26 +341,24 @@ function App() {
               />
             </div>
 
-            {/* AI Provider 선택 (해설지 탭에서만) */}
-            {selectedPDF === 'answersheet' && (
-              <div className="ai-provider-selector">
-                <span className="provider-label">AI 선택:</span>
-                <button
-                  className={`provider-btn ${aiProvider === 'claude' ? 'active' : ''}`}
-                  onClick={() => setAiProvider('claude')}
-                  disabled={isLoading}
-                >
-                  Claude
-                </button>
-                <button
-                  className={`provider-btn ${aiProvider === 'gemini' ? 'active' : ''}`}
-                  onClick={() => setAiProvider('gemini')}
-                  disabled={isLoading}
-                >
-                  Gemini
-                </button>
-              </div>
-            )}
+            {/* AI Provider 선택 */}
+            <div className="ai-provider-selector">
+              <span className="provider-label">AI 선택:</span>
+              <button
+                className={`provider-btn ${aiProvider === 'claude' ? 'active' : ''}`}
+                onClick={() => setAiProvider('claude')}
+                disabled={isLoading}
+              >
+                Claude
+              </button>
+              <button
+                className={`provider-btn ${aiProvider === 'gemini' ? 'active' : ''}`}
+                onClick={() => setAiProvider('gemini')}
+                disabled={isLoading}
+              >
+                Gemini
+              </button>
+            </div>
 
             {error && <div className="error-message">{error}</div>}
 
@@ -371,7 +369,7 @@ function App() {
             >
               {isLoading
                 ? getLoadingText()
-                : `AI 분석 시작 (${currentOption.label}${selectedPDF === 'answersheet' ? ` - ${aiProvider === 'claude' ? 'Claude' : 'Gemini'}` : ''})`}
+                : `AI 분석 시작 (${currentOption.label} - ${aiProvider === 'claude' ? 'Claude' : 'Gemini'})`}
             </button>
           </div>
 
