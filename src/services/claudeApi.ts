@@ -1,8 +1,10 @@
 import { Sentence, StudyGuideData, UniversityAnswerSheetData, AnswerSheetProblem } from '../data/types';
 
 const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 export type PDFType = 'workbook' | 'studyguide' | 'answersheet';
+export type AIProvider = 'claude' | 'gemini';
 
 interface ClaudeResponse {
   content: Array<{
@@ -553,16 +555,9 @@ function parseAnswerSheetTSV(examData: string): {
   return { vocabSection, questionLines, questionHeader };
 }
 
-// 분할된 문제에 대한 해설 생성 (어휘는 TSV에서 이미 파싱됨 - API로 보내지 않음)
-async function analyzeAnswerSheetBatch(
-  questionHeader: string,
-  questionBatch: string[],
-  batchNum: number,
-  totalBatches: number,
-  apiKey: string,
-  onProgress?: (status: string) => void
-): Promise<{ problems: AnswerSheetProblem[]; metadata?: { university: string; year: string } }> {
-  const systemPrompt = `당신은 "대학별 편입영어 해설지" 데이터 생성 전문가입니다.
+// 대학별해설지 시스템 프롬프트 생성 함수
+function getAnswerSheetSystemPrompt(batchNum: number): string {
+  return `당신은 "대학별 편입영어 해설지" 데이터 생성 전문가입니다.
 주어진 시험 문제와 정답 데이터를 기반으로 상세한 해설을 생성해주세요.
 
 ## 대학명 매핑
@@ -622,7 +617,7 @@ ${batchNum === 1 ? `{
   "options": [{ "label": "A", "text": "construe - 해석하다", "isCorrect": true/false }, ...],
   "answer": [정답번호 1-5],
   "step1": "[빈칸 타게팅 - 빈칸이 포함된 문장 구조 분석. 예: '빈칸은 ~의 구조에서 ~라는 의미가 들어가야 해요.']",
-  "step2": "[근거 확인 - 정답의 핵심 표현이나 논리적 단서. 예: '핵심 표현 \"a perfect example of\"입니다. 이는 ~를 의미해요.']",
+  "step2": "[근거 확인 - 정답의 핵심 표현이나 논리적 단서. 예: '핵심 표현 \\"a perfect example of\\"입니다. 이는 ~를 의미해요.']",
   "step3": "[보기 판단 - 각 선택지별 분석. 형식: '① 선택지 - 뜻 → 분석\\n② 선택지 - 뜻 → 분석\\n...\\n정답은 ⓝ번 [정답단어]입니다.']",
   "keyPoint": "정답 | ⓝ [정답단어] → [핵심 의미나 문법 포인트]"
 }
@@ -732,9 +727,210 @@ ${batchNum === 1 ? `{
 - 모든 해설은 ~해요체로 작성하세요.
 - 동의어 문제의 relatedVocab은 "단어 뜻" 형식으로 8~12개 제공하세요.
 - 빈칸 추론의 step3에서는 모든 선택지를 분석하고 마지막에 "정답은 ⓝ번 [단어]입니다."로 마무리하세요.`;
+}
+
+// Gemini API 응답 타입
+interface GeminiResponse {
+  candidates: Array<{
+    content: {
+      parts: Array<{
+        text: string;
+      }>;
+    };
+  }>;
+}
+
+// Gemini API를 사용한 배치 분석
+async function analyzeAnswerSheetBatchGemini(
+  questionHeader: string,
+  questionBatch: string[],
+  batchNum: number,
+  totalBatches: number,
+  apiKey: string,
+  onProgress?: (status: string) => void
+): Promise<{ problems: AnswerSheetProblem[]; metadata?: { university: string; year: string } }> {
+  if (onProgress) {
+    onProgress(`[Gemini] 배치 ${batchNum}/${totalBatches} 분석 중...`);
+  }
+
+  const systemPrompt = getAnswerSheetSystemPrompt(batchNum);
+  const batchData = `${questionHeader}\n${questionBatch.join('\n')}`;
+
+  const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          parts: [
+            {
+              text: `${systemPrompt}\n\n다음 문제들(${questionBatch.length}개)에 대한 해설을 생성해주세요:\n\n${batchData}`,
+            },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      `Gemini API 오류: ${response.status} - ${errorData.error?.message || response.statusText}`
+    );
+  }
+
+  const data: GeminiResponse = await response.json();
+  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!textContent) {
+    throw new Error('Gemini API 응답에서 텍스트를 찾을 수 없습니다.');
+  }
+
+  let text = textContent;
+  text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('JSON을 찾을 수 없습니다.');
+  }
+
+  // JSON 정제
+  let jsonText = jsonMatch[0];
+  jsonText = jsonText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  jsonText = jsonText.replace(/\\([^"\\\/bfnrtu])/g, '$1');
+  jsonText = jsonText.replace(/\r\n/g, '\\n').replace(/\r/g, '\\n');
+
+  // 잘린 JSON 복구 시도
+  function tryFixTruncatedJson(json: string): string {
+    let fixed = json;
+
+    // 문자열이 중간에 잘린 경우 닫아주기
+    const lastQuoteIndex = fixed.lastIndexOf('"');
+    const afterLastQuote = fixed.substring(lastQuoteIndex + 1);
+    if (lastQuoteIndex > 0 && !afterLastQuote.includes('"') && afterLastQuote.match(/[a-zA-Z가-힣]/)) {
+      fixed = fixed + '"';
+    }
+
+    // 배열/객체 괄호 맞추기
+    const openBraces = (fixed.match(/\{/g) || []).length;
+    const closeBraces = (fixed.match(/\}/g) || []).length;
+    const openBrackets = (fixed.match(/\[/g) || []).length;
+    const closeBrackets = (fixed.match(/\]/g) || []).length;
+
+    // 끝에 불완전한 쉼표 제거
+    fixed = fixed.replace(/,\s*$/, '');
+    fixed = fixed.replace(/,\s*([}\]])/, '$1');
+
+    // 괄호 맞추기
+    fixed += ']'.repeat(Math.max(0, openBrackets - closeBrackets));
+    fixed += '}'.repeat(Math.max(0, openBraces - closeBraces));
+
+    return fixed;
+  }
+
+  try {
+    const parsed = JSON.parse(jsonText);
+    return {
+      problems: parsed.problems || [],
+      metadata: batchNum === 1 ? { university: parsed.university, year: parsed.year } : undefined,
+    };
+  } catch (parseError) {
+    console.error('[AnswerSheet-Gemini] JSON 파싱 오류, 복구 시도 중...', parseError);
+
+    // 먼저 잘린 JSON 복구 시도
+    try {
+      const fixedJson = tryFixTruncatedJson(jsonText);
+      const parsed = JSON.parse(fixedJson);
+      console.log('[AnswerSheet-Gemini] 잘린 JSON 복구 성공');
+      return {
+        problems: parsed.problems || [],
+        metadata: batchNum === 1 ? { university: parsed.university, year: parsed.year } : undefined,
+      };
+    } catch {
+      // 복구 실패, 개별 추출로 진행
+    }
+
+    // 개별 problem 객체들 추출 시도 (더 강화된 정규식)
+    const problemObjects: AnswerSheetProblem[] = [];
+
+    // problems 배열 내용만 추출
+    const problemsArrayMatch = jsonText.match(/"problems"\s*:\s*\[([\s\S]*)/);
+    const searchText = problemsArrayMatch ? problemsArrayMatch[1] : jsonText;
+
+    // 각 문제 객체를 더 정확하게 찾기
+    const problemStartRegex = /\{\s*"num"\s*:\s*(\d+)/g;
+    let startMatch;
+    const problemStarts: number[] = [];
+
+    while ((startMatch = problemStartRegex.exec(searchText)) !== null) {
+      problemStarts.push(startMatch.index);
+    }
+
+    for (let i = 0; i < problemStarts.length; i++) {
+      const start = problemStarts[i];
+      const end = i < problemStarts.length - 1 ? problemStarts[i + 1] : searchText.length;
+      let objText = searchText.substring(start, end);
+
+      // 객체 끝 찾기 (중괄호 매칭)
+      let braceCount = 0;
+      let objEnd = 0;
+      for (let j = 0; j < objText.length; j++) {
+        if (objText[j] === '{') braceCount++;
+        if (objText[j] === '}') braceCount--;
+        if (braceCount === 0 && j > 0) {
+          objEnd = j + 1;
+          break;
+        }
+      }
+
+      if (objEnd > 0) {
+        objText = objText.substring(0, objEnd);
+      } else {
+        // 중괄호가 안 맞으면 복구 시도
+        objText = tryFixTruncatedJson(objText.split(/,\s*\{/)[0]);
+      }
+
+      try {
+        const obj = JSON.parse(objText);
+        if (obj.num && obj.answer) {
+          problemObjects.push(obj as AnswerSheetProblem);
+        }
+      } catch {
+        // 개별 객체 파싱 실패, 건너뜀
+      }
+    }
+
+    if (problemObjects.length > 0) {
+      console.log(`[AnswerSheet-Gemini] 개별 추출로 ${problemObjects.length}개 문제 복구`);
+      return {
+        problems: problemObjects,
+        metadata: undefined,
+      };
+    }
+
+    throw parseError;
+  }
+}
+
+// 분할된 문제에 대한 해설 생성 (Claude API)
+async function analyzeAnswerSheetBatch(
+  questionHeader: string,
+  questionBatch: string[],
+  batchNum: number,
+  totalBatches: number,
+  apiKey: string,
+  onProgress?: (status: string) => void
+): Promise<{ problems: AnswerSheetProblem[]; metadata?: { university: string; year: string } }> {
+  const systemPrompt = getAnswerSheetSystemPrompt(batchNum);
 
   if (onProgress) {
-    onProgress(`배치 ${batchNum}/${totalBatches} 분석 중...`);
+    onProgress(`[Claude] 배치 ${batchNum}/${totalBatches} 분석 중...`);
   }
 
   const batchData = `${questionHeader}\n${questionBatch.join('\n')}`;
@@ -782,21 +978,84 @@ ${batchNum === 1 ? `{
     throw new Error('JSON을 찾을 수 없습니다.');
   }
 
-  const parsed = JSON.parse(jsonMatch[0]);
-  return {
-    problems: parsed.problems || [],
-    metadata: batchNum === 1 ? { university: parsed.university, year: parsed.year } : undefined,
-  };
+  // JSON 정제: 잘못된 문자 제거
+  let jsonText = jsonMatch[0];
+  // 제어 문자 제거 (탭, 줄바꿈 제외)
+  jsonText = jsonText.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+  // 잘못된 이스케이프 시퀀스 수정
+  jsonText = jsonText.replace(/\\([^"\\\/bfnrtu])/g, '$1');
+  // 문자열 내 줄바꿈을 \n으로 변환 (JSON 문자열 내에서)
+  jsonText = jsonText.replace(/\r\n/g, '\\n').replace(/\r/g, '\\n');
+
+  try {
+    const parsed = JSON.parse(jsonText);
+    return {
+      problems: parsed.problems || [],
+      metadata: batchNum === 1 ? { university: parsed.university, year: parsed.year } : undefined,
+    };
+  } catch (parseError) {
+    console.error('[AnswerSheet] JSON 파싱 오류, 재시도 중...', parseError);
+
+    // 두 번째 시도: problems 배열만 추출
+    const problemsMatch = jsonText.match(/"problems"\s*:\s*\[[\s\S]*?\](?=\s*[,}])/);
+    if (problemsMatch) {
+      try {
+        const wrappedJson = `{${problemsMatch[0]}}`;
+        const parsed = JSON.parse(wrappedJson);
+        console.log('[AnswerSheet] problems 배열만 추출 성공');
+        return {
+          problems: parsed.problems || [],
+          metadata: undefined,
+        };
+      } catch {
+        // 계속 진행
+      }
+    }
+
+    // 세 번째 시도: 개별 problem 객체들 추출
+    const problemObjects: AnswerSheetProblem[] = [];
+    const problemRegex = /\{\s*"num"\s*:\s*(\d+)[\s\S]*?"answer"\s*:\s*(\d+)[\s\S]*?\}/g;
+    let match;
+    while ((match = problemRegex.exec(jsonText)) !== null) {
+      try {
+        // 매칭된 객체 정제 시도
+        let objText = match[0];
+        // 배열이 제대로 닫히지 않은 경우 수정
+        const openBrackets = (objText.match(/\[/g) || []).length;
+        const closeBrackets = (objText.match(/\]/g) || []).length;
+        if (openBrackets > closeBrackets) {
+          objText += ']'.repeat(openBrackets - closeBrackets);
+        }
+        const obj = JSON.parse(objText);
+        if (obj.num && obj.answer) {
+          problemObjects.push(obj as AnswerSheetProblem);
+        }
+      } catch {
+        // 개별 객체 파싱 실패, 건너뜀
+      }
+    }
+
+    if (problemObjects.length > 0) {
+      console.log(`[AnswerSheet] 개별 추출로 ${problemObjects.length}개 문제 복구`);
+      return {
+        problems: problemObjects,
+        metadata: undefined,
+      };
+    }
+
+    throw parseError;
+  }
 }
 
 // 대학별해설지 분석 함수 (분할 처리)
 export async function analyzeAnswerSheet(
   examData: string,
   apiKey: string,
-  onProgress?: (status: string) => void
+  onProgress?: (status: string) => void,
+  provider: AIProvider = 'claude'
 ): Promise<UniversityAnswerSheetData> {
   if (onProgress) {
-    onProgress('데이터 파싱 중...');
+    onProgress(`[${provider === 'claude' ? 'Claude' : 'Gemini'}] 데이터 파싱 중...`);
   }
 
   // TSV 파싱
@@ -816,8 +1075,8 @@ export async function analyzeAnswerSheet(
     }
   }
 
-  // 문제를 20개씩 분할
-  const BATCH_SIZE = 20;
+  // 문제를 분할 (Gemini는 5개, Claude는 10개)
+  const BATCH_SIZE = provider === 'gemini' ? 5 : 10;
   const batches: string[][] = [];
   for (let i = 0; i < questionLines.length; i += BATCH_SIZE) {
     batches.push(questionLines.slice(i, i + BATCH_SIZE));
@@ -845,18 +1104,30 @@ export async function analyzeAnswerSheet(
   let university = '';
   let year = '';
 
+  const providerLabel = provider === 'claude' ? 'Claude' : 'Gemini';
+
   for (let i = 0; i < batches.length; i++) {
-    console.log(`[AnswerSheet] 배치 ${i + 1}/${batches.length} 시작 (${batches[i].length}문제)`);
+    console.log(`[AnswerSheet-${providerLabel}] 배치 ${i + 1}/${batches.length} 시작 (${batches[i].length}문제)`);
 
     try {
-      const result = await analyzeAnswerSheetBatch(
-        questionHeader,
-        batches[i],
-        i + 1,
-        batches.length,
-        apiKey,
-        onProgress
-      );
+      // provider에 따라 다른 API 호출
+      const result = provider === 'gemini'
+        ? await analyzeAnswerSheetBatchGemini(
+            questionHeader,
+            batches[i],
+            i + 1,
+            batches.length,
+            apiKey,
+            onProgress
+          )
+        : await analyzeAnswerSheetBatch(
+            questionHeader,
+            batches[i],
+            i + 1,
+            batches.length,
+            apiKey,
+            onProgress
+          );
 
       console.log(`[AnswerSheet] 배치 ${i + 1} 결과: ${result.problems.length}개 문제 수신`);
 
