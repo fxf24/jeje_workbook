@@ -505,6 +505,11 @@ export async function analyzeSentences(
   const BATCH_SIZE = provider === 'gemini' ? 5 : 10;
   let completed = 0;
 
+  // 처음에 전체 개수 표시
+  if (onProgress) {
+    onProgress(0, validSentences.length);
+  }
+
   for (let i = 0; i < validSentences.length; i += BATCH_SIZE) {
     const batch = validSentences.slice(i, i + BATCH_SIZE);
     const batchPromises = batch.map((sentence, batchIndex) => {
